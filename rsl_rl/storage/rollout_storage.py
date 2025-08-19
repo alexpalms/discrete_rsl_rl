@@ -21,7 +21,7 @@ class RolloutStorage:
             self.dones = None
             self.values = None
             self.actions_log_prob = None
-            self.action_mean = None
+            self.action_mean = None  # For continuous: mean vector; for discrete: concatenated logits
             self.action_sigma = None
             self.hidden_states = None
 
@@ -36,6 +36,8 @@ class RolloutStorage:
         obs,
         actions_shape,
         device="cpu",
+        action_type="continuous",  # "continuous" or "multi_discrete"
+        logits_shape=None,  # Required if action_type == "multi_discrete"
     ):
         # store inputs
         self.training_type = training_type
@@ -43,6 +45,7 @@ class RolloutStorage:
         self.num_transitions_per_env = num_transitions_per_env
         self.num_envs = num_envs
         self.actions_shape = actions_shape
+        self.action_type = action_type
 
         # Core
         self.observations = TensorDict(
@@ -51,7 +54,8 @@ class RolloutStorage:
             device=self.device,
         )
         self.rewards = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
-        self.actions = torch.zeros(num_transitions_per_env, num_envs, *actions_shape, device=self.device)
+        self.actions = torch.zeros(num_transitions_per_env, num_envs, *actions_shape, device=self.device, dtype=torch.long if action_type == "multi_discrete" else torch.float)
+
         self.dones = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device).byte()
 
         # for distillation
@@ -62,10 +66,16 @@ class RolloutStorage:
         if training_type == "rl":
             self.values = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
             self.actions_log_prob = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
-            self.mu = torch.zeros(num_transitions_per_env, num_envs, *actions_shape, device=self.device)
-            self.sigma = torch.zeros(num_transitions_per_env, num_envs, *actions_shape, device=self.device)
             self.returns = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
             self.advantages = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
+            if action_type == "continuous":
+                self.mu = torch.zeros(num_transitions_per_env, num_envs, *actions_shape, device=self.device)
+                self.sigma = torch.zeros(num_transitions_per_env, num_envs, *actions_shape, device=self.device)
+            elif action_type == "multi_discrete":
+                if logits_shape is None:
+                    raise ValueError("logits_shape must be provided for multi_discrete action_type")
+                self.mu = torch.zeros(num_transitions_per_env, num_envs, *logits_shape, device=self.device)
+                self.sigma = torch.zeros(num_transitions_per_env, num_envs, *logits_shape, device=self.device)  # kept for API compatibility
 
         # For RNN networks
         self.saved_hidden_states_a = None
@@ -93,8 +103,12 @@ class RolloutStorage:
         if self.training_type == "rl":
             self.values[self.step].copy_(transition.values)
             self.actions_log_prob[self.step].copy_(transition.actions_log_prob.view(-1, 1))
-            self.mu[self.step].copy_(transition.action_mean)
-            self.sigma[self.step].copy_(transition.action_sigma)
+            if self.action_type == "continuous":
+                self.mu[self.step].copy_(transition.action_mean)
+                self.sigma[self.step].copy_(transition.action_sigma)
+            elif self.action_type == "multi_discrete":
+                self.mu[self.step].copy_(transition.action_mean)  # concatenated logits tensor
+                self.sigma[self.step].zero_()  # sigma not used, zeroed
 
         # For RNN networks
         self._save_hidden_states(transition.hidden_states)
@@ -196,11 +210,18 @@ class RolloutStorage:
                 old_mu_batch = old_mu[batch_idx]
                 old_sigma_batch = old_sigma[batch_idx]
 
-                # yield the mini-batch
-                yield obs_batch, actions_batch, target_values_batch, advantages_batch, returns_batch, old_actions_log_prob_batch, old_mu_batch, old_sigma_batch, (
+                yield (
+                    obs_batch,
+                    actions_batch,
+                    target_values_batch,
+                    advantages_batch,
+                    returns_batch,
+                    old_actions_log_prob_batch,
+                    old_mu_batch,
+                    old_sigma_batch,
+                    (None, None),
                     None,
-                    None,
-                ), None
+                )
 
     # for reinfrocement learning with recurrent networks
     def recurrent_mini_batch_generator(self, num_mini_batches, num_epochs=8):
@@ -252,9 +273,17 @@ class RolloutStorage:
                 hid_a_batch = hid_a_batch[0] if len(hid_a_batch) == 1 else hid_a_batch
                 hid_c_batch = hid_c_batch[0] if len(hid_c_batch) == 1 else hid_c_batch
 
-                yield obs_batch, actions_batch, values_batch, advantages_batch, returns_batch, old_actions_log_prob_batch, old_mu_batch, old_sigma_batch, (
-                    hid_a_batch,
-                    hid_c_batch,
-                ), masks_batch
+                yield (
+                    obs_batch,
+                    actions_batch,
+                    values_batch,
+                    advantages_batch,
+                    returns_batch,
+                    old_actions_log_prob_batch,
+                    old_mu_batch,
+                    old_sigma_batch,
+                    (hid_a_batch, hid_c_batch),
+                    masks_batch,
+                )
 
                 first_traj = last_traj

@@ -115,7 +115,7 @@ class PPO:
         self.learning_rate = learning_rate
         self.normalize_advantage_per_mini_batch = normalize_advantage_per_mini_batch
 
-    def init_storage(self, training_type, num_envs, num_transitions_per_env, obs, actions_shape):
+    def init_storage(self, training_type, num_envs, num_transitions_per_env, obs, actions_shape, action_type="continuous", logits_shape=None):
         # create rollout storage
         self.storage = RolloutStorage(
             training_type,
@@ -124,6 +124,8 @@ class PPO:
             obs,
             actions_shape,
             self.device,
+            action_type=action_type,
+            logits_shape=logits_shape,
         )
 
     def act(self, obs):

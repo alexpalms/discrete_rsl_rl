@@ -425,12 +425,26 @@ class OnPolicyRunner:
         alg: PPO = alg_class(actor_critic, device=self.device, **self.alg_cfg, multi_gpu_cfg=self.multi_gpu_cfg)
 
         # initialize the storage
+        policy_action_type = self.policy_cfg.get("action_type", "continuous")
+        if policy_action_type == "continuous":
+            actions_shape = [self.env.num_actions]
+            logits_shape = None
+        elif policy_action_type == "multi_discrete":
+            num_actions_list = list(self.env.num_actions)
+            num_branches = len(num_actions_list)
+            actions_shape = (num_branches,)
+            logits_shape = (int(sum(num_actions_list)),)
+        else:
+            raise ValueError(f"Unknown action type: {self.policy_cfg['action_type']}")
+
         alg.init_storage(
             "rl",
             self.env.num_envs,
             self.num_steps_per_env,
             obs,
-            [self.env.num_actions],
+            actions_shape,
+            action_type=policy_action_type,
+            logits_shape=logits_shape,
         )
 
         return alg
