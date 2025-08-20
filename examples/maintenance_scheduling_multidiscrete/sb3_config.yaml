@@ -39,4 +39,4 @@ model_save:
 
 # Training stop
 training_stop:
-  max_time_steps: 10000000
+  max_time_steps: 5000000

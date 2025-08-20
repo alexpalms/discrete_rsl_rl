@@ -6,10 +6,10 @@ from stable_baselines3.common.callbacks import BaseCallback
 import numpy as np
 from gymnasium import Env as GymEnv
 
-from example.train.env_conversions import CpuVecEnvToSb3VecEnv
+from sb3.env_conversions import CpuVecEnvToSb3VecEnv
 
 # Make Stable Baselines3 Env function
-def make_sb3_env(env_class: GymEnv, num_envs: int, seed: int, monitor_folder: str="/tmp/invai/"):
+def make_sb3_env(env_class: GymEnv, env_args: dict, seed: int, monitor_folder: str="/tmp/invai/"):
     """
     Create a wrapped, monitored VecEnv.
     :param start_index: (int) start rank index
@@ -23,7 +23,7 @@ def make_sb3_env(env_class: GymEnv, num_envs: int, seed: int, monitor_folder: st
     if seed is None:
         seed = int(time.time())
 
-    env = env_class(num_envs)
+    env = env_class(**env_args)
     env = CpuVecEnvToSb3VecEnv(env, monitor_folder=monitor_folder)
     env.reset(seed=seed)
     set_random_seed(seed)

@@ -15,9 +15,9 @@ learning_rate:
 clip_range:
   - 0.2
   - 0.2
-n_steps: 128
+n_steps: 24
 n_epochs: 5
-batch_size: 16384
+batch_size: 6144
 
 # Advanced
 gae_lambda: 0.95

@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import time
 import os
+import torch
 
 class CpuVecEnvToSb3VecEnv(VecEnv):
     def __init__(self, vec_env, monitor_folder: str):
@@ -32,7 +33,7 @@ class CpuVecEnvToSb3VecEnv(VecEnv):
         return obs["policy"].cpu().numpy()
 
     def step_async(self, actions):
-        self.actions = actions
+        self.actions = torch.as_tensor(actions, device=self.vec_env.device)
 
     def step_wait(self):
         obs, rew, done, info = self.vec_env.step(self.actions)

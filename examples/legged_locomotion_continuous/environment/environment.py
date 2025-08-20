@@ -3,6 +3,8 @@ import math
 import genesis as gs
 from genesis.utils.geom import quat_to_xyz, transform_by_quat, inv_quat, transform_quat_by_quat
 from tensordict import TensorDict
+from gymnasium import spaces
+import numpy as np
 
 
 def get_cfgs():
@@ -95,6 +97,10 @@ class Environment:
         self.num_actions = env_cfg["num_actions"]
         self.num_commands = command_cfg["num_commands"]
         self.device = gs.device
+
+        self.observation_space = spaces.Box(low=-10.0, high=10.0, shape=(self.num_obs,), dtype=np.float32)
+
+        self.action_space = spaces.Box(low=-10.0, high=10.0, shape=(self.num_actions,), dtype=np.float32)
 
         self.simulate_action_latency = True  # there is a 1 step latency on real robot
         self.dt = 0.02  # control frequency on real robot is 50hz
@@ -310,7 +316,7 @@ class Environment:
 
         self._resample_commands(envs_idx)
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
         self.reset_buf[:] = True
         self.reset_idx(torch.arange(self.num_envs, device=gs.device))
         return TensorDict({"policy": self.obs_buf}), None

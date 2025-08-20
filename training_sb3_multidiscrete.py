@@ -10,7 +10,7 @@ from stable_baselines3 import PPO
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, default="./examples/maintenance_scheduling_multidiscrete/config.yaml", help='Type of control policy')
+    parser.add_argument('--config', type=str, default="./examples/maintenance_scheduling_multidiscrete/sb3_config.yaml", help='Configuration file')
     opt = parser.parse_args()
     print(opt)
 
@@ -18,7 +18,9 @@ if __name__ == "__main__":
         train_config_in = yaml.safe_load(file)
 
     train_config = deepcopy(train_config_in)
-    num_envs = train_config["num_envs"]
+    env_args = {
+        "num_envs": train_config["num_envs"],
+    }
 
     local_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -33,7 +35,8 @@ if __name__ == "__main__":
 
     os.makedirs(model_folder, exist_ok=True)
 
-    env = make_sb3_env(Environment, num_envs, seed=train_config["seed"], monitor_folder=monitor_folder)
+    env = make_sb3_env(Environment, env_args, seed=train_config["seed"], monitor_folder=monitor_folder)
+    num_envs = env_args["num_envs"]
     print("Activated {} environment(s)".format(num_envs))
 
     # Generic algo settings

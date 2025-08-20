@@ -84,12 +84,11 @@ class Environment(gym.Env):
         self.component_age += self.one
 
     def maintenance(self, actions):
-        self.actions = torch.as_tensor(actions, device=self.device)
-        actions_shifted = self.actions - 1
+        actions_shifted = actions - self.one
         valid_mask = actions_shifted >= 0
 
         # Make invalid actions a safe index
-        safe_actions = torch.where(valid_mask, actions_shifted, torch.zeros_like(actions_shifted))
+        safe_actions = torch.where(valid_mask, actions_shifted, torch.zeros_like(actions_shifted)).to(torch.int)
 
         # Create index grid for batch dimension
         env_ids = torch.arange(self.num_envs, device=self.device)[:, None].expand_as(safe_actions)
