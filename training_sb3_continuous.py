@@ -7,7 +7,6 @@ from copy import deepcopy
 import genesis as gs
 from sb3.misc import make_sb3_env, linear_schedule, AutoSave, StartingSteps, CustomMetrics
 
-from examples.legged_locomotion_continuous.environment.environment import get_cfgs
 from stable_baselines3 import PPO
 
 if __name__ == "__main__":
@@ -20,13 +19,8 @@ if __name__ == "__main__":
         train_config_in = yaml.safe_load(file)
 
     train_config = deepcopy(train_config_in)
-    env_cfg, obs_cfg, reward_cfg, command_cfg = get_cfgs()
     env_args = {
         "num_envs": train_config["num_envs"],
-        "env_cfg": env_cfg,
-        "obs_cfg": obs_cfg,
-        "reward_cfg": reward_cfg,
-        "command_cfg": command_cfg,
     }
 
     local_path = os.path.dirname(os.path.abspath(__file__))

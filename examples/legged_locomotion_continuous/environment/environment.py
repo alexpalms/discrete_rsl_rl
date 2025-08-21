@@ -1,96 +1,28 @@
 import torch
+import os
 import math
 import genesis as gs
 from genesis.utils.geom import quat_to_xyz, transform_by_quat, inv_quat, transform_quat_by_quat
 from tensordict import TensorDict
 from gymnasium import spaces
 import numpy as np
-
-
-def get_cfgs():
-    env_cfg = {
-        "num_actions": 12,
-        # joint/link names
-        "default_joint_angles": {  # [rad]
-            "FL_hip_joint": 0.0,
-            "FR_hip_joint": 0.0,
-            "RL_hip_joint": 0.0,
-            "RR_hip_joint": 0.0,
-            "FL_thigh_joint": 0.8,
-            "FR_thigh_joint": 0.8,
-            "RL_thigh_joint": 1.0,
-            "RR_thigh_joint": 1.0,
-            "FL_calf_joint": -1.5,
-            "FR_calf_joint": -1.5,
-            "RL_calf_joint": -1.5,
-            "RR_calf_joint": -1.5,
-        },
-        "joint_names": [
-            "FR_hip_joint",
-            "FR_thigh_joint",
-            "FR_calf_joint",
-            "FL_hip_joint",
-            "FL_thigh_joint",
-            "FL_calf_joint",
-            "RR_hip_joint",
-            "RR_thigh_joint",
-            "RR_calf_joint",
-            "RL_hip_joint",
-            "RL_thigh_joint",
-            "RL_calf_joint",
-        ],
-        # PD
-        "kp": 20.0,
-        "kd": 0.5,
-        # termination
-        "termination_if_roll_greater_than": 10,  # degree
-        "termination_if_pitch_greater_than": 10,
-        # base pose
-        "base_init_pos": [0.0, 0.0, 0.42],
-        "base_init_quat": [1.0, 0.0, 0.0, 0.0],
-        "episode_length_s": 20.0,
-        "resampling_time_s": 4.0,
-        "action_scale": 0.25,
-        "simulate_action_latency": True,
-        "clip_actions": 100.0,
-    }
-    obs_cfg = {
-        "num_obs": 45,
-        "obs_scales": {
-            "lin_vel": 2.0,
-            "ang_vel": 0.25,
-            "dof_pos": 1.0,
-            "dof_vel": 0.05,
-        },
-    }
-    reward_cfg = {
-        "tracking_sigma": 0.25,
-        "base_height_target": 0.3,
-        "feet_height_target": 0.075,
-        "reward_scales": {
-            "tracking_lin_vel": 1.0,
-            "tracking_ang_vel": 0.2,
-            "lin_vel_z": -1.0,
-            "base_height": -50.0,
-            "action_rate": -0.005,
-            "similar_to_default": -0.1,
-        },
-    }
-    command_cfg = {
-        "num_commands": 3,
-        "lin_vel_x_range": [0.5, 0.5],
-        "lin_vel_y_range": [0, 0],
-        "ang_vel_range": [0, 0],
-    }
-
-    return env_cfg, obs_cfg, reward_cfg, command_cfg
+import yaml
 
 def gs_rand_float(lower, upper, shape, device):
     return (upper - lower) * torch.rand(size=shape, device=device) + lower
 
 
 class Environment:
-    def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg, show_viewer=False):
+    def __init__(self, num_envs, config_path="./config.yaml", show_viewer=False):
+        local_path = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(local_path, config_path), 'r') as file:
+            config = yaml.safe_load(file)
+
+        env_cfg = config["env_cfg"]
+        obs_cfg = config["obs_cfg"]
+        reward_cfg = config["reward_cfg"]
+        command_cfg = config["command_cfg"]
+
         self.num_envs = num_envs
         self.num_obs = obs_cfg["num_obs"]
         self.num_privileged_obs = None
@@ -320,6 +252,9 @@ class Environment:
         self.reset_buf[:] = True
         self.reset_idx(torch.arange(self.num_envs, device=gs.device))
         return TensorDict({"policy": self.obs_buf}), None
+
+    def close(self):
+        pass
 
     # ------------ reward functions----------------
     def _reward_tracking_lin_vel(self):

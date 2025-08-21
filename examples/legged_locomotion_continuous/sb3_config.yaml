@@ -35,8 +35,8 @@ model_checkpoint_path: null
 model_save:
   autosave:
     active: true
-    frequency: 1000000
+    frequency: 460000
 
 # Training stop
 training_stop:
-  max_time_steps: 10000000
+  max_time_steps: 2300000
