@@ -249,6 +249,7 @@ class Environment:
         self._resample_commands(envs_idx)
 
     def reset(self, seed=None, options=None):
+        self.scene.reset()
         self.reset_buf[:] = True
         self.reset_idx(torch.arange(self.num_envs, device=gs.device))
         return TensorDict({"policy": self.obs_buf}), None
