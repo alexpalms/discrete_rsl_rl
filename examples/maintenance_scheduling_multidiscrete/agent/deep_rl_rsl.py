@@ -13,7 +13,7 @@ class Agent:
         if not os.path.exists(self.model_path):
             raise FileNotFoundError(f"Cannot create agent, policy file '{self.model_path}' not found!")
 
-        with open(config_path, 'r') as file:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), config_path), 'r') as file:
             config = yaml.safe_load(file)
 
         train_config = config["train_cfg"]

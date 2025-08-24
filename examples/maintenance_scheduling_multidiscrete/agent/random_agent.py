@@ -1,9 +1,9 @@
 import numpy as np
-from gymnasium import spaces
+import torch
 
 class Agent:
     def __init__(self, env):
         self.env = env
 
     def get_action(self, obs):
-        return np.array([self.env.action_space.sample()] * self.env.num_envs)
+        return torch.randint(0, self.env.action_space.nvec[0], (self.env.num_envs, self.env.action_space.shape[0]), device=self.env.device)
