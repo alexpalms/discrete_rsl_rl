@@ -6,7 +6,7 @@
 </table>
 
 <p align="center">
-<a href="https://alexpalms.github.io/projects/02-rl_cuas/"><img src="https://img.shields.io/badge/Blog-Read%20Post-blue" alt="Blog Post"/></a>
+<a href="https://alexpalms.github.io/projects/03-discrete_rsl_rl/"><img src="https://img.shields.io/badge/Blog-Read%20Post-blue" alt="Blog Post"/></a>
 </p>
 
 # Discrete RSL RL
