@@ -3,11 +3,12 @@
     <td width="50%"><img src="./runs/multidiscrete_PPO.png" alt="multidiscrete_training" width="100%"/></td>
     <td width="50%"><img src="./runs/continuous_PPO.png" alt="continuous_training" width="100%"/></td>
   </tr>
-  <tr>
-    <td align="center">MultiDiscrete Training Curve RSL VS SB3</td>
-    <td align="center">Continuous Training Curve RSL VS SB3</td>
-  </tr>
 </table>
+
+<p align="center">
+<a href="https://alexpalms.github.io/projects/02-rl_cuas/"><img src="https://img.shields.io/badge/Blog-Read%20Post-blue" alt="Blog Post"/></a>
+</p>
+
 # Discrete RSL RL
 
 Customized version of the original [RSL RL project](https://github.com/leggedrobotics/rsl_rl) that additionally supports multi discrete action spaces, providing a fast and simple implementation of PPO algorithm, designed to run fully on GPU.
@@ -76,7 +77,7 @@ tensorboard --logdir runs/
 
 # Citation
 ```
-@misc{palmas2024discrete_rsl_rl,
+@misc{palmas2025discrete_rsl_rl,
   author = {Alessandro Palmas},
   title = {Discrete RSL RL},
   year = {2025},
