@@ -11,6 +11,6 @@ class Agent:
 
     def get_action(self, obs):
         obs = obs.cpu().numpy()
-        prediction,_ = self.agent.predict(obs, deterministic=True)
+        prediction,_ = self.agent.predict(obs, deterministic=False)
         prediction = torch.tensor(prediction, dtype=torch.long, device="cuda")
         return prediction
