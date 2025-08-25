@@ -1,4 +1,51 @@
-# RSL RL
+<table>
+  <tr>
+    <td width="50%"><img src="./runs/multidiscrete_PPO.png" alt="multidiscrete_training" width="100%"/></td>
+    <td width="50%"><img src="./runs/continuous_PPO.png" alt="continuous_training" width="100%"/></td>
+  </tr>
+  <tr>
+    <td align="center">MultiDiscrete Training Curve RSL VS SB3</td>
+    <td align="center">Continuous Training Curve RSL VS SB3</td>
+  </tr>
+</table>
+# Discrete RSL RL
+
+Customized version of the original [RSL RL project](https://github.com/leggedrobotics/rsl_rl) that additionally supports multi discrete action spaces, providing a fast and simple implementation of PPO algorithm, designed to run fully on GPU.
+
+## Environment Configuration
+
+```bash
+conda create -n rsl_rl python=3.11
+conda activate rsl_rl
+pip install -r requirements
+```
+
+```bash
+python training_rsl_multidiscrete.py # RSL Training
+python training_sb3_multidiscrete.py # Stable Baselines 3 Training
+```
+
+```bash
+python evaluate_multidiscrete.py
+```
+
+```bash
+python training_rsl_continuous.py # RSL Training
+python training_sb3_continuous.py # Stable Baselines 3 Training
+```
+
+```bash
+python evaluate_continuous.py
+```
+
+
+
+
+```bash
+tensorboard --logdir runs/
+```
+
+# RSL RL (Original Readme)
 
 A fast and simple implementation of RL algorithms, designed to run fully on GPU.
 This code is an evolution of `rl-pytorch` provided with NVIDIA's Isaac Gym.
