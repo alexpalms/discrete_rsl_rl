@@ -20,6 +20,10 @@ conda activate rsl_rl
 pip install -r requirements
 ```
 
+## Examples
+
+### Multi Discrete Action Space - Maintenance Scheduling Optimization
+
 ```bash
 python training_rsl_multidiscrete.py # RSL Training
 python training_sb3_multidiscrete.py # Stable Baselines 3 Training
@@ -28,6 +32,19 @@ python training_sb3_multidiscrete.py # Stable Baselines 3 Training
 ```bash
 python evaluate_multidiscrete.py
 ```
+
+<table>
+  <tr>
+    <td width="50%"><img src="./runs/multidiscrete_PPO.png" alt="multidiscrete_training" width="100%"/></td>
+    <td width="50%"><img src="./examples/maintenance_scheduling_multidiscrete/RiskPlot.png" alt="multidiscrete_results" width="100%"/></td>
+  </tr>
+  <tr>
+    <td align="center">MultiDiscrete Training Curve RSL VS SB3</td>
+    <td align="center">Trained Model Evaluation</td>
+  </tr>
+</table>
+
+### Continuous Action Space - Robotics Legged Locomotion
 
 ```bash
 python training_rsl_continuous.py # RSL Training
@@ -38,11 +55,34 @@ python training_sb3_continuous.py # Stable Baselines 3 Training
 python evaluate_continuous.py
 ```
 
+<table>
+  <tr>
+    <td width="33%"><img src="./runs/continuous_PPO.png" alt="continuous_training" width="100%"/></td>
+    <td width="33%"><img src="./examples/legged_locomotion_continuous/locomotion_rsl.gif" alt="continuous_rsl_results" width="100%"/></td>
+    <td width="33%"><img src="./examples/legged_locomotion_continuous/locomotion_sb3.gif" alt="continuous_sb3_results" width="100%"/></td>
+  </tr>
+  <tr>
+    <td width="33%" align="center">MultiDiscrete Training Curve RSL VS SB3</td>
+    <td width="33%" align="center">Trained Model Evaluation - RSL</td>
+    <td width="33%" align="center">Trained Model Evaluation - SB3</td>
+  </tr>
+</table>
 
-
+### Tensorboard Visualization
 
 ```bash
 tensorboard --logdir runs/
+```
+
+# Citation
+```
+@misc{palmas2024discrete_rsl_rl,
+  author = {Alessandro Palmas},
+  title = {Discrete RSL RL},
+  year = {2025},
+  url = {https://github.com/alexpalms/discrete_rsl_rl},
+  note = {GitHub repository}
+}
 ```
 
 # RSL RL (Original Readme)
