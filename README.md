@@ -56,11 +56,16 @@ This ensures that all necessary libraries for RSL-RL, Stable Baselines 3, and GP
 
 ### Validation
 
-We validate the multi-discrete and continuous implementations through training and evaluation on representative benchmarks.
+We validate the multi-discrete and continuous implementations through training and evaluation on representative benchmarks, ensuring full GPU execution and no regressions on continuous tasks.
 
 #### Multi Discrete Action Space - Maintenance Scheduling Optimization
 
-Train agents with RSL-RL or Stable Baselines 3:
+- **Environment:** Custom maintenance scheduling optimization problem, where the agent decides which machine to service at each timestep over a 1-year simulation.
+- **Action Space:** Multi-discrete choice.
+- **Goal:** Test correctness and efficiency of multi-discrete support in RSL-RL.
+- **Validation:** Compared performance and training curves with SB3’s multi-discrete PPO implementation.
+
+Train agents:
 
 ```bash
 python training_rsl_multidiscrete.py # RSL Training
@@ -88,7 +93,12 @@ Results are visualized below. On the left, you can see the training curves compa
 
 #### Continuous Action Space - Robotics Legged Locomotion
 
-We also validate that continuous control remains unaffected. Training commands:
+- **Environment:** Genesis simulator with a Unitree Go2 quadruped robot.
+- **Action Space:**  Fully continuous joint controls.
+- **Goal:** Evaluate if RSL-RL still matches or exceeds baseline performance in standard continuous locomotion tasks.
+- **Validation:** Compared training curves with original RSL-RL results and evaluation runs with Stable Baselines 3 (SB3) using PPO.
+
+Traing agents:
 
 ```bash
 python training_rsl_continuous.py # RSL Training
