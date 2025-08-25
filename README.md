@@ -13,7 +13,38 @@
 
 Customized version of the original [RSL RL project](https://github.com/leggedrobotics/rsl_rl) that additionally supports multi discrete action spaces, providing a fast and simple implementation of PPO algorithm, designed to run fully on GPU.
 
-## Environment Configuration
+## Overview
+
+### Motivation
+
+RSL-RL is a lightweight, GPU-native RL library designed for fast, high-throughput continuous control, but it originally only supported continuous actions, limiting its applicability. Many real-world tasks, like maintenance scheduling or resource allocation, require **multi-discrete action spaces**, where the agent makes independent categorical choices per branch. This project extended RSL-RL to handle multi-discrete actions while preserving its continuous control performance, keeping API changes minimal, and validating results against Stable Baselines 3. With this update, RSL-RL can now tackle a broader range of decision-making and optimization problems, all while maintaining GPU-accelerated speed.
+
+### Implementation Details
+
+The core of this project was extending the RSL-RL codebase to natively support multi-discrete actions while keeping continuous control fully functional. You can see all the modifications in my [commit here](https://github.com/alexpalms/discrete_rsl_rl/commit/d9ccebe7fee536b574ea36dfd94c0f4ccde8c916?diff=split).
+
+Here’s a high-level overview of the changes:
+
+- **[Actor-Critic Module](https://github.com/alexpalms/discrete_rsl_rl/blob/main/rsl_rl/modules/actor_critic.py).** The `ActorCritic` class was refactored to handle both continuous and multi-discrete distributions. For continuous actions, it still outputs mean and standard deviation vectors. For multi-discrete actions, it now outputs concatenated logits per branch and manages sampling, evaluation, and log-probability calculations appropriately. This allows PPO and other algorithms to work seamlessly with either action type.
+
+- **[Rollout Storage](https://github.com/alexpalms/discrete_rsl_rl/blob/main/rsl_rl/storage/rollout_storage.py).** Rollout storage was adapted to store logits for multi-discrete actions instead of continuous action vectors. This includes modifications to `add_transitions` and mini-batch generators to maintain a uniform interface for both types of action spaces. The storage still resides fully on GPU for maximum speed.
+
+- **[PPO Runner](https://github.com/alexpalms/discrete_rsl_rl/blob/main/rsl_rl/runners/on_policy_runner.py).** The on-policy runner was updated to correctly initialize the algorithm with the proper shapes for multi-discrete actions. It now dynamically handles action type selection from the environment configuration without breaking the continuous action workflow.
+
+Key Points:
+- The implementation maintains **full GPU execution**, no matter if actions are continuous or multi-discrete.
+- Continuous action benchmarks remain **unaffected**, ensuring no regressions.
+- The API changes are minimal, keeping the library intuitive and easy to use.
+
+These updates make RSL-RL more versatile, opening the door to a broader class of reinforcement learning problems without sacrificing speed or simplicity.
+
+## Technical Details
+
+Below are instructions to set up the environment, run training, and visualize results.
+
+### Environment Configuration
+
+First, create and activate the Conda environment, then install dependencies:
 
 ```bash
 conda create -n rsl_rl python=3.11
@@ -21,18 +52,28 @@ conda activate rsl_rl
 pip install -r requirements
 ```
 
-## Examples
+This ensures that all necessary libraries for RSL-RL, Stable Baselines 3, and GPU execution are available.
 
-### Multi Discrete Action Space - Maintenance Scheduling Optimization
+### Validation
+
+We validate the multi-discrete and continuous implementations through training and evaluation on representative benchmarks.
+
+#### Multi Discrete Action Space - Maintenance Scheduling Optimization
+
+Train agents with RSL-RL or Stable Baselines 3:
 
 ```bash
 python training_rsl_multidiscrete.py # RSL Training
 python training_sb3_multidiscrete.py # Stable Baselines 3 Training
 ```
 
+After training, evaluate the trained models:
+
 ```bash
 python evaluate_multidiscrete.py
 ```
+
+Results are visualized below. On the left, you can see the training curves comparing RSL and SB3, while on the right is the evaluation of both trained model on the scheduling task.
 
 <table>
   <tr>
@@ -45,16 +86,22 @@ python evaluate_multidiscrete.py
   </tr>
 </table>
 
-### Continuous Action Space - Robotics Legged Locomotion
+#### Continuous Action Space - Robotics Legged Locomotion
+
+We also validate that continuous control remains unaffected. Training commands:
 
 ```bash
 python training_rsl_continuous.py # RSL Training
 python training_sb3_continuous.py # Stable Baselines 3 Training
 ```
 
+Evaluate the trained models:
+
 ```bash
 python evaluate_continuous.py
 ```
+
+The table below shows the learning curves (left) and evaluation of the Unitree Go2 locomotion task for both RSL and SB3 (center and right). RSL-RL maintains performance parity while running fully on GPU.
 
 <table>
   <tr>
@@ -69,13 +116,17 @@ python evaluate_continuous.py
   </tr>
 </table>
 
-### Tensorboard Visualization
+#### Tensorboard Visualization
+
+For interactive monitoring of training metrics, you can launch Tensorboard:
 
 ```bash
 tensorboard --logdir runs/
 ```
 
-# Citation
+This will allow you to explore rewards, losses, and other key statistics in real-time.
+
+## Citation
 ```
 @misc{palmas2025discrete_rsl_rl,
   author = {Alessandro Palmas},
@@ -85,6 +136,8 @@ tensorboard --logdir runs/
   note = {GitHub repository}
 }
 ```
+
+__________________________________________________________________________
 
 # RSL RL (Original Readme)
 
