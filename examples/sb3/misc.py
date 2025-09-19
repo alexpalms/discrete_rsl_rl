@@ -1,27 +1,54 @@
+"""Miscellaneous functions for the examples."""
+
+import tempfile
 import time
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
-from stable_baselines3.common.utils import set_random_seed
+from sb3.env_conversions import CpuVecEnvToSb3VecEnv  # type: ignore
 from stable_baselines3.common.callbacks import BaseCallback
-import numpy as np
-from gymnasium import Env as GymEnv
+from stable_baselines3.common.utils import set_random_seed
 
-from sb3.env_conversions import CpuVecEnvToSb3VecEnv
+from examples.legged_locomotion_continuous.environment.environment import (
+    Environment as EnvironmentContinuous,
+)
+from examples.maintenance_scheduling_multidiscrete.environment.environment import (
+    Environment as EnvironmentMultidiscrete,
+)
+
 
 # Make Stable Baselines3 Env function
-def make_sb3_env(env_class: GymEnv, env_args: dict, seed: int, monitor_folder: str="/tmp/invai/"):
+def make_sb3_env(
+    env_class: Callable[..., EnvironmentContinuous | EnvironmentMultidiscrete],
+    env_args: dict[str, Any],
+    seed: int | None = None,
+    monitor_folder: str | None = None,
+) -> CpuVecEnvToSb3VecEnv:
     """
     Create a wrapped, monitored VecEnv.
-    :param start_index: (int) start rank index
-    :param allow_early_resets: (bool) allows early reset of the environment
-    :param start_method: (str) method used to start the subprocesses. See SubprocVecEnv doc for more information
-    :param use_subprocess: (bool) Whether to use `SubprocVecEnv` or `DummyVecEnv`
-    :param no_vec: (bool) Whether to avoid usage of Vectorized Env or not. Default: False
-    :return: (VecEnv) The vectorized environment
-    """
 
+    Parameters
+    ----------
+    env_class : EnvironmentContinuous | EnvironmentMultidiscrete
+        The environment class.
+    env_args : dict
+        The environment arguments.
+    seed : int
+        The seed.
+    monitor_folder : str, optional
+        The monitor folder, by default "/tmp/invai/".
+
+    Returns
+    -------
+    VecEnv
+        The vectorized environment.
+    """
     if seed is None:
         seed = int(time.time())
+
+    if monitor_folder is None:
+        monitor_folder = tempfile.mkdtemp(prefix="invai_")
 
     env = env_class(**env_args)
     env = CpuVecEnvToSb3VecEnv(env, monitor_folder=monitor_folder)
@@ -30,8 +57,11 @@ def make_sb3_env(env_class: GymEnv, env_args: dict, seed: int, monitor_folder: s
 
     return env
 
+
 # Linear scheduler for RL agent parameters
-def linear_schedule(initial_value, final_value=0.0):
+def linear_schedule(
+    initial_value: float | str, final_value: float = 0.0
+) -> Callable[[float], float]:
     """
     Linear learning rate schedule.
     :param initial_value: (float or str)
@@ -40,7 +70,9 @@ def linear_schedule(initial_value, final_value=0.0):
     if isinstance(initial_value, str):
         initial_value = float(initial_value)
         final_value = float(final_value)
-        assert (initial_value > 0.0), "linear_schedule work only with positive decreasing values"
+        assert initial_value > 0.0, (
+            "linear_schedule work only with positive decreasing values"
+        )
 
     def func(progress):
         """
@@ -52,6 +84,7 @@ def linear_schedule(initial_value, final_value=0.0):
 
     return func
 
+
 # AutoSave Callback
 class AutoSave(BaseCallback):
     """
@@ -62,7 +95,16 @@ class AutoSave(BaseCallback):
     :filename_prefix: (str) Filename prefix
     :param verbose: (int)
     """
-    def __init__(self, check_freq: int, num_envs: int, save_path: str, filename_prefix: str="",     starting_steps: int=0, verbose: int=1):
+
+    def __init__(
+        self,
+        check_freq: int,
+        num_envs: int,
+        save_path: str,
+        filename_prefix: str = "",
+        starting_steps: int = 0,
+        verbose: int = 1,
+    ):
         super(AutoSave, self).__init__(verbose)
         self.check_freq = int(check_freq / num_envs)
         self.num_envs = num_envs
@@ -73,11 +115,18 @@ class AutoSave(BaseCallback):
     def _on_step(self) -> bool:
         if self.n_calls % self.check_freq == 0:
             if self.verbose > 0:
-                print("Saving latest model to {}".format(self.save_path_base))
+                print(f"Saving latest model to {self.save_path_base}")
             # Save the agent
-            self.model.save(self.save_path_base / (self.filename + str(self.starting_steps + self.n_calls * self.num_envs)))
+            self.model.save(
+                self.save_path_base
+                / (
+                    self.filename
+                    + str(self.starting_steps + self.n_calls * self.num_envs)
+                )
+            )
 
         return True
+
 
 # Initialize the starting steps number
 class StartingSteps(BaseCallback):
@@ -86,6 +135,7 @@ class StartingSteps(BaseCallback):
 
     :param starting_steps: (int)
     """
+
     def __init__(self, starting_steps: int):
         super(StartingSteps, self).__init__()
         self.starting_steps = starting_steps
@@ -105,13 +155,14 @@ class CustomMetrics(BaseCallback):
 
     :param verbose: Verbosity level: 0 for no output, 1 for info messages
     """
+
     def __init__(self, verbose: int = 0):
         super().__init__(verbose)
         self.value_buffer = {}
 
     def _on_step(self) -> bool:
         # Get info dict from locals
-        infos = self.locals['infos']
+        infos = self.locals["infos"]
 
         # Collect all metrics from first info dict to initialize buffer if needed
         if len(infos) > 0:
@@ -137,7 +188,9 @@ class CustomMetrics(BaseCallback):
                 # Calculate mean over collected values
                 mean_value = np.mean(self.value_buffer[key])
                 # Log to tensorboard
-                self.logger.record(key, mean_value)  # key already includes "custom_metrics/" prefix
+                self.logger.record(
+                    key, mean_value
+                )  # key already includes "custom_metrics/" prefix
                 # Clear buffer
                 self.value_buffer[key] = []
 

@@ -1,5 +1,3 @@
-gymnasium
-scipy
 stable-baselines3
 tensorboard
 pyyaml

@@ -1,28 +1,78 @@
+"""Deep RL RSL Agent."""
+
 import os
+from typing import cast
+
 import torch
-from rsl_rl.runners import OnPolicyRunner
-from tensordict import TensorDict
 import yaml
+from maintenance_scheduling_multidiscrete.environment.environment import Environment
+from tensordict import TensorDict
+
+from discrete_rsl_rl.runners import OnPolicyRunner
+
 
 class Agent:
-    def __init__(self, env, model_path="./model_rsl.pt", config_path="../rsl_config.yaml", device="cuda", deterministic=True):
+    """
+    Deep RL RSL Agent.
+
+    Parameters
+    ----------
+    env : Environment
+        The environment to run the agent in.
+    model_path : str
+        The path to the model file.
+    config_path : str
+        The path to the configuration file.
+    device : str
+        The device to run the agent on.
+    deterministic : bool
+        Whether to use a deterministic policy.
+    """
+
+    def __init__(
+        self,
+        env: Environment,
+        model_path: str = "./model_rsl.pt",
+        config_path: str = "../rsl_config.yaml",
+        device: str = "cuda",
+        deterministic: bool = True,
+    ):
         self.env = env
         self.deterministic = deterministic
         self.device = device
-        self.model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), model_path)
+        self.model_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), model_path
+        )
         if not os.path.exists(self.model_path):
-            raise FileNotFoundError(f"Cannot create agent, policy file '{self.model_path}' not found!")
+            raise FileNotFoundError(
+                f"Cannot create agent, policy file '{self.model_path}' not found!"
+            )
 
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), config_path), 'r') as file:
+        with open(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), config_path)
+        ) as file:
             config = yaml.safe_load(file)
 
         train_config = config["train_cfg"]
 
         runner = OnPolicyRunner(env, train_config, "./", device="cuda")
         runner.load(self.model_path)
-        self.policy = runner.get_inference_policy(device=self.device)
+        self.policy = runner.get_inference_policy(device=self.device)  # type: ignore
 
-    def get_action(self, obs):
+    def get_action(self, obs: TensorDict) -> torch.Tensor:
+        """
+        Get the action from the policy.
+
+        Parameters
+        ----------
+        obs : TensorDict
+            The observation.
+
+        Returns
+        -------
+        torch.Tensor
+            The action.
+        """
         with torch.no_grad():
-            action = self.policy(TensorDict({"policy": obs}))
+            action = cast(torch.Tensor, self.policy(TensorDict({"policy": obs})))  # pyright: ignore[reportUnknownMemberType]
         return action
