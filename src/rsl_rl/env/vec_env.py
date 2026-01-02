@@ -5,9 +5,10 @@
 
 from __future__ import annotations
 
-import torch
 from abc import ABC, abstractmethod
-from tensordict import TensorDict
+
+import torch
+from tensordict import TensorDict  # type: ignore[reportMissingStubs]
 
 
 class VecEnv(ABC):
@@ -55,7 +56,9 @@ class VecEnv(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def step(self, actions: torch.Tensor) -> tuple[TensorDict, torch.Tensor, torch.Tensor, dict]:
+    def step(
+        self, actions: torch.Tensor
+    ) -> tuple[TensorDict, torch.Tensor, torch.Tensor, dict]:
         """Apply input action to the environment.
 
         Args:

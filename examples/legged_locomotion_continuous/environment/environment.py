@@ -370,6 +370,10 @@ class Environment:
             self.extras,
         )
 
+    def render(self) -> None:
+        """Render the environment."""
+        return None
+
     def get_observations(self) -> TensorDict:
         """
         Get the observations.

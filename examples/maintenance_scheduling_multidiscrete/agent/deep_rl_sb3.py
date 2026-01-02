@@ -6,7 +6,7 @@ from typing import cast
 import numpy as np
 import torch
 from stable_baselines3 import PPO
-from tensordict import TensorDict  # type: ignore
+from tensordict import TensorDict  # type: ignore[reportMissingStubs]
 
 
 class Agent:

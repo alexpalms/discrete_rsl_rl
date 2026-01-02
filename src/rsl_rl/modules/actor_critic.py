@@ -7,9 +7,8 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
-from torch.distributions import Normal, Categorical
-
 from rsl_rl.networks import MLP, EmpiricalNormalization
+from torch.distributions import Categorical, Normal
 
 
 class ActorCritic(nn.Module):
@@ -38,25 +37,33 @@ class ActorCritic(nn.Module):
         super().__init__()
 
         # store action type
-        assert action_type in ("continuous", "multi_discrete"), "action_type must be 'continuous' or 'multi_discrete'"
+        assert action_type in ("continuous", "multi_discrete"), (
+            "action_type must be 'continuous' or 'multi_discrete'"
+        )
         self.action_type = action_type
 
         # get the observation dimensions
         self.obs_groups = obs_groups
         num_actor_obs = 0
         for obs_group in obs_groups["policy"]:
-            assert len(obs[obs_group].shape) == 2, "The ActorCritic module only supports 1D observations."
+            assert len(obs[obs_group].shape) == 2, (
+                "The ActorCritic module only supports 1D observations."
+            )
             num_actor_obs += obs[obs_group].shape[-1]
         num_critic_obs = 0
         for obs_group in obs_groups["critic"]:
-            assert len(obs[obs_group].shape) == 2, "The ActorCritic module only supports 1D observations."
+            assert len(obs[obs_group].shape) == 2, (
+                "The ActorCritic module only supports 1D observations."
+            )
             num_critic_obs += obs[obs_group].shape[-1]
 
         # determine action paramization
         # continuous: num_actions is int (action dim)
         # multi_discrete: num_actions should be list/tuple of ints (num categories per branch)
         if self.action_type == "continuous":
-            assert isinstance(num_actions, int), "For continuous action_type, num_actions must be int"
+            assert isinstance(num_actions, int), (
+                "For continuous action_type, num_actions must be int"
+            )
             self.num_actions = num_actions
             actor_output_dim = num_actions
             # Action noise parameters
@@ -64,14 +71,22 @@ class ActorCritic(nn.Module):
             if self.noise_std_type == "scalar":
                 self.std = nn.Parameter(init_noise_std * torch.ones(self.num_actions))
             elif self.noise_std_type == "log":
-                self.log_std = nn.Parameter(torch.log(init_noise_std * torch.ones(self.num_actions)))
+                self.log_std = nn.Parameter(
+                    torch.log(init_noise_std * torch.ones(self.num_actions))
+                )
             else:
-                raise ValueError(f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'")
+                raise ValueError(
+                    f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'"
+                )
         else:  # multi_discrete
-            assert isinstance(num_actions, (list, tuple)), "For multi_discrete action_type, num_actions must be list/tuple"
+            assert isinstance(num_actions, (list, tuple)), (
+                "For multi_discrete action_type, num_actions must be list/tuple"
+            )
             self.num_actions_list = list(num_actions)
             self.num_branches = len(self.num_actions_list)
-            actor_output_dim = int(sum(self.num_actions_list))  # we will output logits concatenated
+            actor_output_dim = int(
+                sum(self.num_actions_list)
+            )  # we will output logits concatenated
             # std/log_std are not used for discrete
             self.noise_std_type = None
             self.std = None
@@ -149,7 +164,9 @@ class ActorCritic(nn.Module):
             elif self.noise_std_type == "log":
                 std = torch.exp(self.log_std).expand_as(mean)
             else:
-                raise ValueError(f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'")
+                raise ValueError(
+                    f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'"
+                )
             # create distribution
             self.distribution = Normal(mean, std)
             self._last_logits = None
@@ -224,7 +241,11 @@ class ActorCritic(nn.Module):
         else:
             # compute per-branch log-probs -> [B, num_branches], sum over branches -> [B]
             logps = torch.stack(
-                [cat.log_prob(actions[..., i]) for i, cat in enumerate(self.distribution)], dim=1
+                [
+                    cat.log_prob(actions[..., i])
+                    for i, cat in enumerate(self.distribution)
+                ],
+                dim=1,
             )
             return logps.sum(dim=1)
 

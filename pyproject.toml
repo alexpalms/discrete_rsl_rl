@@ -1,9 +1,9 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "discrete-rsl-rl"
+name = "rsl-rl"
 version = "3.0.0"
 keywords = ["reinforcement-learning", "isaac", "leggedrobotics", "rl-pytorch"]
 maintainers = [
@@ -20,22 +20,22 @@ description = "Fast and simple RL algorithms implemented in PyTorch"
 readme = { file = "README.md", content-type = "text/markdown"}
 license = { text = "BSD-3-Clause" }
 
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
 dependencies = [
     "torch>=2.6.0",
-    "torchvision>=0.5.0",
+    #"torchvision>=0.5.0",
     "tensordict>=0.7.0",
-    "numpy>=1.16.4",
-    "GitPython",
-    "onnx",
+    #"numpy>=1.16.4",
+    #"GitPython",
+    #"onnx",
     "stable-baselines3>=2.7.0",
     "tensorboard>=2.20.0",
-    "pandas>=2.3.2",
-    "matplotlib>=3.10.6",
+    #"pandas>=2.3.2",
+    #"matplotlib>=3.10.6",
     "pyyaml>=6.0.2",
     "genesis-world>=0.3.3",
 ]
@@ -46,6 +46,9 @@ Issues = "https://github.com/leggedrobotics/rsl_rl/issues"
 
 [tool.setuptools]
 include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools.package-data]
 discrete_rsl_rl = ["py.typed", "data/*"]
@@ -58,21 +61,18 @@ reportMissingImports = "error"
 reportMissingParameterType = "error"
 reportMissingTypeArgument = "error"
 reportUntypedFunctionDecorator = "error"
-reportUntypedFunctionCall = "error"
-reportMissingTypeStubs = "none"
-
-[tool.mypy]
-strict = true
-python_version = "3.11"
-files = ["src", "examples", "tests"]#, "docs"]
+reportMissingTypeStubs = "error"
+extraPaths = ["stubs"]
+exclude = []
 
 [tool.ruff]
 line-length = 88
-target-version = "py311"
+target-version = "py312"
+exclude = []
 
 [tool.ruff.lint]
 select = [
-  "D", "E", "F", "UP", "I", "B", "N", "S", "A", "C4", "T20"
+  "E", "F", "UP", "I", "B", "N", "S", "A", "C4", "T20"
 ]
 ignore = ["E501", "D107"]
 
@@ -81,11 +81,26 @@ convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
 "src/**/__init__.py" = ["D104", "D107"]  # ignore module and __init__ docstrings
+"tests/**" = ["S101"]  # allow asserts in tests
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 line-ending = "lf"
+
+[tool.coverage.run]
+source = ["src"]
+omit = []
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
 
 [dependency-groups]
 dev = [

@@ -6,9 +6,9 @@ from typing import cast
 import torch
 import yaml
 from maintenance_scheduling_multidiscrete.environment.environment import Environment
-from tensordict import TensorDict
+from tensordict import TensorDict  # type: ignore[reportMissingStubs]
 
-from discrete_rsl_rl.runners import OnPolicyRunner
+from rsl_rl.runners import OnPolicyRunner
 
 
 class Agent:

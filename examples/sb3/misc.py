@@ -6,6 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 from sb3.env_conversions import CpuVecEnvToSb3VecEnv  # type: ignore
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.utils import set_random_seed
@@ -64,21 +65,40 @@ def linear_schedule(
 ) -> Callable[[float], float]:
     """
     Linear learning rate schedule.
-    :param initial_value: (float or str)
-    :return: (function)
+
+    Parameters
+    ----------
+    initial_value : float | str
+        The initial value.
+    final_value : float, optional
+        The final value, by default 0.0.
+
+    Returns
+    -------
+    Callable[[float], float]
+        The linear scheduler.
     """
     if isinstance(initial_value, str):
         initial_value = float(initial_value)
         final_value = float(final_value)
-        assert initial_value > 0.0, (
-            "linear_schedule work only with positive decreasing values"
-        )
+        if not initial_value > 0.0:
+            raise ValueError(
+                "linear_schedule work only with positive decreasing values"
+            )
 
-    def func(progress):
+    def func(progress: float) -> float:
         """
-        Progress will decrease from 1 (beginning) to 0
-        :param progress: (float)
-        :return: (float)
+        Progress will decrease from 1 (beginning) to 0.
+
+        Parameters
+        ----------
+        progress : float
+            The progress.
+
+        Returns
+        -------
+        float
+            The progress.
         """
         return final_value + progress * (initial_value - final_value)
 
@@ -88,12 +108,22 @@ def linear_schedule(
 # AutoSave Callback
 class AutoSave(BaseCallback):
     """
-    Callback for saving a model, it is saved every ``check_freq`` steps
+    Callback for saving a model, it is saved every `check_freq` steps.
 
-    :param check_freq: (int)
-    :param save_path: (str) Path to the folder where the model will be saved.
-    :filename_prefix: (str) Filename prefix
-    :param verbose: (int)
+    Parameters
+    ----------
+    check_freq : int
+        The frequency of the saving.
+    num_envs : int
+        The number of environments.
+    save_path : str
+        The path to the folder where the model will be saved.
+    filename_prefix : str
+        The filename prefix.
+    starting_steps : int
+        The starting steps.
+    verbose : int
+        The verbosity level.
     """
 
     def __init__(
@@ -104,8 +134,8 @@ class AutoSave(BaseCallback):
         filename_prefix: str = "",
         starting_steps: int = 0,
         verbose: int = 1,
-    ):
-        super(AutoSave, self).__init__(verbose)
+    ) -> None:
+        super().__init__(verbose)
         self.check_freq = int(check_freq / num_envs)
         self.num_envs = num_envs
         self.save_path_base = Path(save_path)
@@ -115,7 +145,7 @@ class AutoSave(BaseCallback):
     def _on_step(self) -> bool:
         if self.n_calls % self.check_freq == 0:
             if self.verbose > 0:
-                print(f"Saving latest model to {self.save_path_base}")
+                self.logger.info(f"Saving latest model to {self.save_path_base}")  # pyright: ignore[reportUnknownMemberType]
             # Save the agent
             self.model.save(
                 self.save_path_base
@@ -131,13 +161,16 @@ class AutoSave(BaseCallback):
 # Initialize the starting steps number
 class StartingSteps(BaseCallback):
     """
-    Callback for setting the starting number of steps
+    Callback for setting the starting number of steps.
 
-    :param starting_steps: (int)
+    Parameters
+    ----------
+    starting_steps : int
+        The starting steps.
     """
 
     def __init__(self, starting_steps: int):
-        super(StartingSteps, self).__init__()
+        super().__init__()
         self.starting_steps = starting_steps
 
     def _init_callback(self) -> None:
@@ -151,14 +184,18 @@ class StartingSteps(BaseCallback):
 class CustomMetrics(BaseCallback):
     """
     Custom callback for logging values from the environment info dictionary.
+
     Automatically detects and logs all metrics with prefix 'custom_metrics/' in the info dict.
 
-    :param verbose: Verbosity level: 0 for no output, 1 for info messages
+    Parameters
+    ----------
+    verbose : int
+        The verbosity level.
     """
 
     def __init__(self, verbose: int = 0):
         super().__init__(verbose)
-        self.value_buffer = {}
+        self.value_buffer: dict[str, list[Any]] = {}
 
     def _on_step(self) -> bool:
         # Get info dict from locals
@@ -172,7 +209,7 @@ class CustomMetrics(BaseCallback):
 
         # Aggregate values across all environments
         for key in self.value_buffer.keys():
-            values = []
+            values: list[Any] = []
             for info in infos:
                 if key in info:
                     values.append(info[key])

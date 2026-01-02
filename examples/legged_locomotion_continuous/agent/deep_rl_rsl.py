@@ -8,7 +8,7 @@ import yaml
 from legged_locomotion_continuous.environment.environment import Environment
 from tensordict import TensorDict  # type: ignore
 
-from discrete_rsl_rl.runners import OnPolicyRunner
+from rsl_rl.runners import OnPolicyRunner
 
 
 class Agent:

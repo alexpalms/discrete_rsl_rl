@@ -3,10 +3,11 @@
 import logging
 import os
 import time
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import torch
+from gymnasium import Wrapper
 from legged_locomotion_continuous.environment.environment import (
     Environment as EnvironmentContinuous,
 )
@@ -14,7 +15,7 @@ from maintenance_scheduling_multidiscrete.environment.environment import (
     Environment as EnvironmentMultidiscrete,
 )
 from stable_baselines3.common.vec_env import VecEnv
-from stable_baselines3.common.vec_env.base_vec_env import VecEnvObs
+from stable_baselines3.common.vec_env.base_vec_env import VecEnvIndices, VecEnvObs
 
 
 class CpuVecEnvToSb3VecEnv(VecEnv):
@@ -74,7 +75,7 @@ class CpuVecEnvToSb3VecEnv(VecEnv):
         self.rewards = np.zeros((self.vec_env.num_envs,), dtype=np.float32)
         self.steps = np.zeros((self.vec_env.num_envs,), dtype=np.int32)
         obs, _ = self.vec_env.reset(seed=seed, options=options)
-        return obs["policy"].cpu().numpy()
+        return cast(np.ndarray, obs["policy"].cpu().numpy())  # pyright: ignore[reportUnknownMemberType]
 
     def step_async(self, actions: np.ndarray) -> None:
         """
@@ -101,7 +102,16 @@ class CpuVecEnvToSb3VecEnv(VecEnv):
         obs, rew, done, info = self.vec_env.step(self.actions)
         rew = rew.cpu().numpy()
         done = done.cpu().numpy()
-        info = [info for _ in range(self.vec_env.num_envs)]
+        new_info: dict[str, Any] = {}
+        for key, value in info.items():
+            if not isinstance(value, dict):
+                new_info[key] = float(value.cpu().numpy())
+                continue
+            new_info_elem: dict[str, float] = {}
+            for key2, value2 in value.items():
+                new_info_elem[key2] = float(value2.cpu().numpy())
+            new_info[key] = new_info_elem
+        info = [new_info for _ in range(self.vec_env.num_envs)]
 
         # Info & Monitor
         for idx in range(self.vec_env.num_envs):
@@ -121,9 +131,9 @@ class CpuVecEnvToSb3VecEnv(VecEnv):
                 ep_rew = self.rewards[idx]
                 ep_len = self.steps[idx]
                 ep_info = {
-                    "r": round(ep_rew, 6),
-                    "l": ep_len,
-                    "t": round(time.time() - self.t_start, 6),
+                    "r": float(round(ep_rew, 6)),
+                    "l": float(ep_len),
+                    "t": float(round(time.time() - self.t_start, 6)),
                 }
                 if "episode" not in info[idx]:
                     info[idx]["episode"] = ep_info
@@ -136,43 +146,126 @@ class CpuVecEnvToSb3VecEnv(VecEnv):
         self.rewards += rew
         self.steps += np.ones((self.vec_env.num_envs,), dtype=np.int32)
 
-        return obs["policy"].cpu().numpy(), rew, done, info
+        return cast(np.ndarray, obs["policy"].cpu().numpy()), rew, done, info  # pyright: ignore[reportUnknownMemberType]
 
-    def render(self, **kwargs: dict[str, Any]) -> Any:
+    def render(self, mode: str | None = None) -> np.ndarray | None:
         """
         Render the environment.
 
         Parameters
         ----------
-        **kwargs : dict
+        mode : str, optional
+            The mode to render the environment.
             The keyword arguments to pass to the environment render method.
 
         Returns
         -------
-        Any
+        np.ndarray | None
             The rendered environment.
         """
-        return self.vec_env.render(**kwargs)
+        self.vec_env.render()
+        return None
 
     def close(self) -> None:
-        """
-        Close the environment.
-        """
+        """Close the environment."""
         self.vec_env.close()
 
-    def get_images(self):
+    def get_images(self) -> list[Any]:
+        """
+        Get the images of the environment.
+
+        Returns
+        -------
+        list[Any]
+            The images of the environment.
+        """
         return [None for _ in range(self.vec_env.num_envs)]
 
-    def get_attr(self, attr_name: str, indices=None) -> list[Any]:
+    def get_attr(self, attr_name: str, indices: VecEnvIndices = None) -> list[Any]:
+        """
+        Get the attribute of the environment.
+
+        Parameters
+        ----------
+        attr_name : str
+            The attribute name.
+        indices : VecEnvIndices, optional
+            The indices of the environments.
+
+        Returns
+        -------
+        list[Any]
+            The attribute of the environment.
+        """
         return [None] * self.vec_env.num_envs
 
-    def set_attr(self, attr_name: str, value: Any, indices=None) -> None:
+    def set_attr(
+        self, attr_name: str, value: Any, indices: VecEnvIndices = None
+    ) -> None:
+        """
+        Set the attribute of the environment.
+
+        Parameters
+        ----------
+        attr_name : str
+            The attribute name.
+        value : Any
+            The value to set.
+        indices : VecEnvIndices, optional
+            The indices of the environments.
+
+        Returns
+        -------
+        None
+        """
         pass
 
     def env_method(
-        self, method_name: str, *method_args, indices=None, **method_kwargs
+        self,
+        method_name: str,
+        *method_args: Any,
+        indices: VecEnvIndices = None,
+        **method_kwargs: Any,
     ) -> list[Any]:
+        """
+        Call the method of the environment.
+
+        Parameters
+        ----------
+        method_name : str
+            The method name.
+        *method_args : Any
+            The method arguments.
+        indices : VecEnvIndices, optional
+            The indices of the environments.
+        **method_kwargs : Any
+            The method keyword arguments.
+
+        Returns
+        -------
+        list[Any]
+            The method of the environment.
+        """
         return [None] * self.vec_env.num_envs
 
-    def env_is_wrapped(self, wrapper_class, indices=None) -> list[bool]:
+    def env_is_wrapped(
+        self,
+        wrapper_class: type[Wrapper[Any, Any, Any, Any]],
+        indices: VecEnvIndices = None,
+    ) -> list[bool]:
+        """
+        Check if the environment is wrapped.
+
+        Parameters
+        ----------
+        wrapper_class : type[Wrapper]
+            The wrapper class.
+        indices : VecEnvIndices, optional
+            The indices of the environments.
+
+        Returns
+        -------
+        list[bool]
+            The wrapped environment.
+        """
         return [False] * self.vec_env.num_envs

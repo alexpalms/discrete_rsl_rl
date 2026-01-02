@@ -9,8 +9,10 @@ import torch
 from gymnasium import spaces
 from tensordict import TensorDict
 
+from rsl_rl.env.vec_env import VecEnv
 
-class Environment:
+
+class Environment(VecEnv):
     """
     Maintenance Scheduling Multidiscrete Environment.
 
