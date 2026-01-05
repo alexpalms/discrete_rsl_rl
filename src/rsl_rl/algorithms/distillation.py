@@ -47,9 +47,7 @@ class Distillation:
         self.storage = None  # initialized later
 
         # initialize the optimizer
-        self.optimizer = resolve_optimizer(optimizer)(
-            self.policy.parameters(), lr=learning_rate
-        )
+        self.optimizer = resolve_optimizer(optimizer)(self.policy.parameters(), lr=learning_rate)
 
         # initialize the transition
         self.transition = RolloutStorage.Transition()
@@ -69,15 +67,11 @@ class Distillation:
         if loss_type in loss_fn_dict:
             self.loss_fn = loss_fn_dict[loss_type]
         else:
-            raise ValueError(
-                f"Unknown loss type: {loss_type}. Supported types are: {list(loss_fn_dict.keys())}"
-            )
+            raise ValueError(f"Unknown loss type: {loss_type}. Supported types are: {list(loss_fn_dict.keys())}")
 
         self.num_updates = 0
 
-    def init_storage(
-        self, training_type, num_envs, num_transitions_per_env, obs, actions_shape
-    ):
+    def init_storage(self, training_type, num_envs, num_transitions_per_env, obs, actions_shape):
         # create rollout storage
         self.storage = RolloutStorage(
             training_type,
@@ -118,6 +112,7 @@ class Distillation:
             self.policy.reset(hidden_states=self.last_hidden_states)
             self.policy.detach_hidden_states()
             for obs, _, privileged_actions, dones in self.storage.generator():
+
                 # inference the student for gradient computation
                 actions = self.policy.act_inference(obs)
 
@@ -136,9 +131,7 @@ class Distillation:
                     if self.is_multi_gpu:
                         self.reduce_parameters()
                     if self.max_grad_norm:
-                        nn.utils.clip_grad_norm_(
-                            self.policy.student.parameters(), self.max_grad_norm
-                        )
+                        nn.utils.clip_grad_norm_(self.policy.student.parameters(), self.max_grad_norm)
                     self.optimizer.step()
                     self.policy.detach_hidden_states()
                     loss = 0
@@ -176,11 +169,7 @@ class Distillation:
         This function is called after the backward pass to synchronize the gradients across all GPUs.
         """
         # Create a tensor to store the gradients
-        grads = [
-            param.grad.view(-1)
-            for param in self.policy.parameters()
-            if param.grad is not None
-        ]
+        grads = [param.grad.view(-1) for param in self.policy.parameters() if param.grad is not None]
         all_grads = torch.cat(grads)
         # Average the gradients across all GPUs
         torch.distributed.all_reduce(all_grads, op=torch.distributed.ReduceOp.SUM)
@@ -191,8 +180,6 @@ class Distillation:
             if param.grad is not None:
                 numel = param.numel()
                 # copy data back from shared buffer
-                param.grad.data.copy_(
-                    all_grads[offset : offset + numel].view_as(param.grad.data)
-                )
+                param.grad.data.copy_(all_grads[offset : offset + numel].view_as(param.grad.data))
                 # update the offset for the next parameter
                 offset += numel

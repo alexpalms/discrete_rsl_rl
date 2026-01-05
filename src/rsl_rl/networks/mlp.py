@@ -5,10 +5,9 @@
 
 from __future__ import annotations
 
-from functools import reduce
-
 import torch
 import torch.nn as nn
+from functools import reduce
 
 from rsl_rl.utils import resolve_nn_activation
 
@@ -52,11 +51,7 @@ class MLP(nn.Sequential):
 
         # resolve activation functions
         activation_mod = resolve_nn_activation(activation)
-        last_activation_mod = (
-            resolve_nn_activation(last_activation)
-            if last_activation is not None
-            else None
-        )
+        last_activation_mod = resolve_nn_activation(last_activation) if last_activation is not None else None
         # resolve number of hidden dims if they are -1
         hidden_dims_processed = [input_dim if dim == -1 else dim for dim in hidden_dims]
 
@@ -66,12 +61,7 @@ class MLP(nn.Sequential):
         layers.append(activation_mod)
 
         for layer_index in range(len(hidden_dims_processed) - 1):
-            layers.append(
-                nn.Linear(
-                    hidden_dims_processed[layer_index],
-                    hidden_dims_processed[layer_index + 1],
-                )
-            )
+            layers.append(nn.Linear(hidden_dims_processed[layer_index], hidden_dims_processed[layer_index + 1]))
             layers.append(activation_mod)
 
         # add last layer

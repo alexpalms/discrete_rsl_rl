@@ -7,9 +7,8 @@ from __future__ import annotations
 
 import os
 import time
-from collections import deque
-
 import torch
+from collections import deque
 
 import rsl_rl
 from rsl_rl.algorithms import Distillation
@@ -22,9 +21,7 @@ from rsl_rl.utils import resolve_obs_groups, store_code_state
 class DistillationRunner(OnPolicyRunner):
     """On-policy runner for training and evaluation of teacher-student training."""
 
-    def __init__(
-        self, env: VecEnv, train_cfg: dict, log_dir: str | None = None, device="cpu"
-    ):
+    def __init__(self, env: VecEnv, train_cfg: dict, log_dir: str | None = None, device="cpu"):
         self.cfg = train_cfg
         self.alg_cfg = train_cfg["algorithm"]
         self.policy_cfg = train_cfg["policy"]
@@ -40,9 +37,7 @@ class DistillationRunner(OnPolicyRunner):
 
         # query observations from environment for algorithm construction
         obs = self.env.get_observations()
-        self.cfg["obs_groups"] = resolve_obs_groups(
-            obs, self.cfg["obs_groups"], default_sets=["teacher"]
-        )
+        self.cfg["obs_groups"] = resolve_obs_groups(obs, self.cfg["obs_groups"], default_sets=["teacher"])
 
         # create the algorithm
         self.alg = self._construct_algorithm(obs)
@@ -64,9 +59,7 @@ class DistillationRunner(OnPolicyRunner):
         self._prepare_logging_writer()
         # check if teacher is loaded
         if not self.alg.policy.loaded_teacher:
-            raise ValueError(
-                "Teacher model parameters not loaded. Please load a teacher model to distill."
-            )
+            raise ValueError("Teacher model parameters not loaded. Please load a teacher model to distill.")
 
         # randomize initial episode lengths (for exploration)
         if init_at_random_ep_len:
@@ -82,12 +75,8 @@ class DistillationRunner(OnPolicyRunner):
         ep_infos = []
         rewbuffer = deque(maxlen=100)
         lenbuffer = deque(maxlen=100)
-        cur_reward_sum = torch.zeros(
-            self.env.num_envs, dtype=torch.float, device=self.device
-        )
-        cur_episode_length = torch.zeros(
-            self.env.num_envs, dtype=torch.float, device=self.device
-        )
+        cur_reward_sum = torch.zeros(self.env.num_envs, dtype=torch.float, device=self.device)
+        cur_episode_length = torch.zeros(self.env.num_envs, dtype=torch.float, device=self.device)
 
         # Ensure all parameters are in-synced
         if self.is_distributed:
@@ -105,15 +94,9 @@ class DistillationRunner(OnPolicyRunner):
                     # Sample actions
                     actions = self.alg.act(obs)
                     # Step the environment
-                    obs, rewards, dones, extras = self.env.step(
-                        actions.to(self.env.device)
-                    )
+                    obs, rewards, dones, extras = self.env.step(actions.to(self.env.device))
                     # Move to device
-                    obs, rewards, dones = (
-                        obs.to(self.device),
-                        rewards.to(self.device),
-                        dones.to(self.device),
-                    )
+                    obs, rewards, dones = (obs.to(self.device), rewards.to(self.device), dones.to(self.device))
                     # process the step
                     self.alg.process_env_step(obs, rewards, dones, extras)
                     # book keeping
@@ -128,12 +111,8 @@ class DistillationRunner(OnPolicyRunner):
                         cur_episode_length += 1
                         # Clear data for completed episodes
                         new_ids = (dones > 0).nonzero(as_tuple=False)
-                        rewbuffer.extend(
-                            cur_reward_sum[new_ids][:, 0].cpu().numpy().tolist()
-                        )
-                        lenbuffer.extend(
-                            cur_episode_length[new_ids][:, 0].cpu().numpy().tolist()
-                        )
+                        rewbuffer.extend(cur_reward_sum[new_ids][:, 0].cpu().numpy().tolist())
+                        lenbuffer.extend(cur_episode_length[new_ids][:, 0].cpu().numpy().tolist())
                         cur_reward_sum[new_ids] = 0
                         cur_episode_length[new_ids] = 0
 
@@ -168,11 +147,7 @@ class DistillationRunner(OnPolicyRunner):
 
         # Save the final model after training
         if self.log_dir is not None and not self.disable_logs:
-            self.save(
-                os.path.join(
-                    self.log_dir, f"model_{self.current_learning_iteration}.pt"
-                )
-            )
+            self.save(os.path.join(self.log_dir, f"model_{self.current_learning_iteration}.pt"))
 
     """
     Helper methods.
@@ -182,19 +157,14 @@ class DistillationRunner(OnPolicyRunner):
         """Construct the distillation algorithm."""
         # initialize the actor-critic
         student_teacher_class = eval(self.policy_cfg.pop("class_name"))
-        student_teacher: StudentTeacher | StudentTeacherRecurrent = (
-            student_teacher_class(
-                obs, self.cfg["obs_groups"], self.env.num_actions, **self.policy_cfg
-            ).to(self.device)
-        )
+        student_teacher: StudentTeacher | StudentTeacherRecurrent = student_teacher_class(
+            obs, self.cfg["obs_groups"], self.env.num_actions, **self.policy_cfg
+        ).to(self.device)
 
         # initialize the algorithm
         alg_class = eval(self.alg_cfg.pop("class_name"))
         alg: Distillation = alg_class(
-            student_teacher,
-            device=self.device,
-            **self.alg_cfg,
-            multi_gpu_cfg=self.multi_gpu_cfg,
+            student_teacher, device=self.device, **self.alg_cfg, multi_gpu_cfg=self.multi_gpu_cfg
         )
 
         # initialize the storage
