@@ -5,20 +5,20 @@ import os
 from collections.abc import Callable
 from typing import Any, cast
 
-import genesis as gs  # type: ignore
+import genesis as gs  # pyright:ignore[reportMissingTypeStubs]
 import numpy as np
 import torch
 import yaml
-from genesis.utils.geom import (  # type: ignore
+from genesis.utils.geom import (  # pyright:ignore[reportMissingTypeStubs]
     inv_quat,  # pyright:ignore[reportUnknownVariableType]
     quat_to_xyz,  # pyright:ignore[reportUnknownVariableType]
     transform_by_quat,  # pyright:ignore[reportUnknownVariableType]
     transform_quat_by_quat,  # pyright:ignore[reportUnknownVariableType]
 )
 from gymnasium import spaces
-from tensordict import TensorDict  # type: ignore
+from tensordict import TensorDict  # pyright:ignore[reportMissingTypeStubs]
 
-from rsl_rl.env.vec_env import VecEnv
+from rsl_rl.env.vec_env import VecEnv  # pyright:ignore[reportMissingTypeStubs]
 
 
 def gs_rand_float(

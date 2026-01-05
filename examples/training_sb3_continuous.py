@@ -9,6 +9,7 @@ from copy import deepcopy
 
 import genesis as gs  # pyright:ignore[reportMissingTypeStubs]
 import yaml
+from legged_locomotion_continuous.environment.environment import Environment
 from sb3.misc import (
     AutoSave,
     CustomMetrics,
@@ -18,8 +19,6 @@ from sb3.misc import (
 )
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback
-
-from examples.legged_locomotion_continuous.environment.environment import Environment
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -40,7 +39,7 @@ def main(config: str):
 
     local_path = os.path.dirname(os.path.abspath(__file__))
 
-    results_folder = os.path.join(local_path, "runs", train_config["name"])
+    results_folder = os.path.join(local_path, "../runs", train_config["name"])
     model_folder = os.path.join(results_folder, "model")
     tensor_board_folder = os.path.join(results_folder, "tb")
     monitor_folder = os.path.join(results_folder, "monitor")

@@ -5,10 +5,10 @@ from typing import cast
 
 import torch
 import yaml
-from tensordict import TensorDict  # type: ignore[reportMissingTypeStubs]
+from tensordict import TensorDict  # pyright:ignore[reportMissingTypeStubs]
 
-from rsl_rl.env.vec_env import VecEnv
-from rsl_rl.runners import OnPolicyRunner
+from rsl_rl.env.vec_env import VecEnv  # pyright:ignore[reportMissingTypeStubs]
+from rsl_rl.runners import OnPolicyRunner  # pyright:ignore[reportMissingTypeStubs]
 
 
 class Agent:

@@ -7,9 +7,9 @@ from typing import Any
 import numpy as np
 import torch
 from gymnasium import spaces
-from tensordict import TensorDict  # type: ignore[reportMissingTypeStubs]
+from tensordict import TensorDict  # pyright:ignore[reportMissingTypeStubs]
 
-from rsl_rl.env.vec_env import VecEnv
+from rsl_rl.env.vec_env import VecEnv  # pyright:ignore[reportMissingTypeStubs]
 
 
 class Environment(VecEnv):

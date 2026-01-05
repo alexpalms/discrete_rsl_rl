@@ -6,9 +6,9 @@ from typing import cast
 import numpy as np
 import torch
 from stable_baselines3 import PPO
-from tensordict import TensorDict  # type: ignore
+from tensordict import TensorDict  # pyright:ignore[reportMissingTypeStubs]
 
-from rsl_rl.env.vec_env import VecEnv
+from rsl_rl.env.vec_env import VecEnv  # pyright:ignore[reportMissingTypeStubs]
 
 
 class Agent:

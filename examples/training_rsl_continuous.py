@@ -7,8 +7,8 @@ import sys
 
 import genesis as gs  # pyright:ignore[reportMissingTypeStubs]
 import yaml
+from legged_locomotion_continuous.environment.environment import Environment
 
-from examples.legged_locomotion_continuous.environment.environment import Environment
 from rsl_rl.runners import OnPolicyRunner  # pyright:ignore[reportMissingTypeStubs]
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ def main(config: str) -> None:
     local_path = os.path.dirname(os.path.abspath(__file__))
 
     results_folder = os.path.join(
-        local_path, "runs", train_config["runner"]["experiment_name"]
+        local_path, "../runs", train_config["runner"]["experiment_name"]
     )
     log_folder = os.path.join(results_folder, "logs/")
 

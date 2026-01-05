@@ -6,10 +6,10 @@ import os
 import sys
 
 import yaml
-
-from examples.maintenance_scheduling_multidiscrete.environment.environment import (
+from maintenance_scheduling_multidiscrete.environment.environment import (
     Environment,
 )
+
 from rsl_rl.runners import OnPolicyRunner  # pyright:ignore[reportMissingTypeStubs]
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def main(config: str) -> None:
     train_config = config_in["train_cfg"]
 
     results_folder = os.path.join(
-        local_path, "runs", train_config["runner"]["experiment_name"]
+        local_path, "../runs", train_config["runner"]["experiment_name"]
     )
     log_folder = os.path.join(results_folder, "logs/")
 

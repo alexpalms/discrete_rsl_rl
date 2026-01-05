@@ -7,21 +7,14 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from sb3.env_conversions import CpuVecEnvToSb3VecEnv  # type: ignore
+from sb3.env_conversions import CpuVecEnvToSb3VecEnv
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.utils import set_random_seed
-
-from examples.legged_locomotion_continuous.environment.environment import (
-    Environment as EnvironmentContinuous,
-)
-from examples.maintenance_scheduling_multidiscrete.environment.environment import (
-    Environment as EnvironmentMultidiscrete,
-)
 
 
 # Make Stable Baselines3 Env function
 def make_sb3_env(
-    env_class: Callable[..., EnvironmentContinuous | EnvironmentMultidiscrete],
+    env_class: Callable[..., Any],
     env_args: dict[str, Any],
     seed: int | None = None,
     monitor_folder: str | None = None,

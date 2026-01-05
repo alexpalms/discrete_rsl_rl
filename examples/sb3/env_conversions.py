@@ -102,16 +102,9 @@ class CpuVecEnvToSb3VecEnv(VecEnv):
         obs, rew, done, info = self.vec_env.step(self.actions)
         rew = rew.cpu().numpy()
         done = done.cpu().numpy()
-        new_info: dict[str, Any] = {}
-        for key, value in info.items():
-            if not isinstance(value, dict):
-                new_info[key] = float(value.cpu().numpy())
-                continue
-            new_info_elem: dict[str, float] = {}
-            for key2, value2 in value.items():
-                new_info_elem[key2] = float(value2.cpu().numpy())
-            new_info[key] = new_info_elem
-        info = [new_info for _ in range(self.vec_env.num_envs)]
+        new_info = cast(
+            list[dict[str, Any]], [info for _ in range(self.vec_env.num_envs)]
+        )
 
         # Info & Monitor
         for idx in range(self.vec_env.num_envs):
@@ -135,10 +128,10 @@ class CpuVecEnvToSb3VecEnv(VecEnv):
                     "l": float(ep_len),
                     "t": float(round(time.time() - self.t_start, 6)),
                 }
-                if "episode" not in info[idx]:
-                    info[idx]["episode"] = ep_info
+                if "episode" not in new_info[idx]:
+                    new_info[idx]["episode"] = ep_info
                 else:
-                    info[idx]["episode"].update(ep_info)
+                    new_info[idx]["episode"].update(ep_info)
 
                 self.rewards[idx] = 0.0
                 self.steps[idx] = 0
@@ -146,7 +139,7 @@ class CpuVecEnvToSb3VecEnv(VecEnv):
         self.rewards += rew
         self.steps += np.ones((self.vec_env.num_envs,), dtype=np.int32)
 
-        return cast(np.ndarray, obs["policy"].cpu().numpy()), rew, done, info  # pyright:ignore[reportUnknownMemberType]
+        return cast(np.ndarray, obs["policy"].cpu().numpy()), rew, done, new_info  # pyright:ignore[reportUnknownMemberType]
 
     def render(self, mode: str | None = None) -> np.ndarray | None:
         """
