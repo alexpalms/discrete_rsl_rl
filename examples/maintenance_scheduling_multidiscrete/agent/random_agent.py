@@ -11,7 +11,7 @@ class Agent:
     def get_action(self, obs: TensorDict) -> torch.Tensor:
         return torch.randint(
             0,
-            self.env.action_space.nvec[0],  # type:ignore[reportUnkownMemberType]
-            (self.env.num_envs, self.env.action_space.shape[0]),  # type:ignore[reportUnkownMemberType]
+            self.env.action_space.nvec[0],  # pyright:ignore[reportUnkownMemberType]
+            (self.env.num_envs, self.env.action_space.shape[0]),  # pyright:ignore[reportUnkownMemberType]
             device=self.env.device,
         )

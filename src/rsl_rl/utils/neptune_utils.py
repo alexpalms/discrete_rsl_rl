@@ -36,14 +36,14 @@ class NeptuneLogger:
         if type(env_cfg) is dict:
             self.run["env_cfg"] = env_cfg
         else:
-            self.run["env_cfg"] = asdict(env_cfg)  # type:ignore[reportArgumentType]
+            self.run["env_cfg"] = asdict(env_cfg)  # pyright:ignore[reportArgumentType]
 
 
 class NeptuneSummaryWriter(SummaryWriter):
     """Summary writer for Neptune."""
 
     def __init__(self, log_dir: str, flush_secs: int, cfg: dict[str, Any]):
-        super().__init__(log_dir, flush_secs=flush_secs)  # type:ignore[reportUnknownMemberType]
+        super().__init__(log_dir, flush_secs=flush_secs)  # pyright:ignore[reportUnknownMemberType]
 
         try:
             project = cfg["neptune_project"]
@@ -77,7 +77,7 @@ class NeptuneSummaryWriter(SummaryWriter):
 
         run_name = os.path.split(log_dir)[-1]
 
-        self.neptune_logger.run["log_dir"].log(run_name)  # type:ignore[reportUnknownMemberType]
+        self.neptune_logger.run["log_dir"].log(run_name)  # pyright:ignore[reportUnknownMemberType]
 
     def _map_path(self, path: str) -> str:
         if path in self.name_map:
@@ -94,7 +94,7 @@ class NeptuneSummaryWriter(SummaryWriter):
         new_style: bool = False,
         double_precision: bool = False,
     ):
-        super().add_scalar(  # type:ignore[reportUnknownMemberType]
+        super().add_scalar(  # pyright:ignore[reportUnknownMemberType]
             tag,
             scalar_value,
             global_step=global_step,
@@ -102,7 +102,7 @@ class NeptuneSummaryWriter(SummaryWriter):
             new_style=new_style,
             double_precision=double_precision,
         )
-        self.neptune_logger.run[self._map_path(tag)].log(scalar_value, step=global_step)  # type:ignore[reportUnknownMemberType]
+        self.neptune_logger.run[self._map_path(tag)].log(scalar_value, step=global_step)  # pyright:ignore[reportUnknownMemberType]
 
     def stop(self):
         self.neptune_logger.run.stop()
@@ -117,8 +117,8 @@ class NeptuneSummaryWriter(SummaryWriter):
         self.neptune_logger.store_config(env_cfg, runner_cfg, alg_cfg, policy_cfg)
 
     def save_model(self, model_path: str, iter: int):
-        self.neptune_logger.run["model/saved_model_" + str(iter)].upload(model_path)  # type:ignore[reportUnknownMemberType]
+        self.neptune_logger.run["model/saved_model_" + str(iter)].upload(model_path)  # pyright:ignore[reportUnknownMemberType]
 
     def save_file(self, path: str, _iter: int | None = None):
         name = path.rsplit("/", 1)[-1].split(".")[0]
-        self.neptune_logger.run["git_diff/" + name].upload(path)  # type:ignore[reportUnknownMemberType]
+        self.neptune_logger.run["git_diff/" + name].upload(path)  # pyright:ignore[reportUnknownMemberType]

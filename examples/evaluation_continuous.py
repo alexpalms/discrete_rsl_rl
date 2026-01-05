@@ -1,7 +1,7 @@
 import logging
 import sys
 
-import genesis as gs  # type:ignore[reportMissingTypeStubs]
+import genesis as gs  # pyright:ignore[reportMissingTypeStubs]
 
 from examples.legged_locomotion_continuous.agent.deep_rl_rsl import (
     Agent as DeepRlAgentRSL,
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     n_episodes = 1
 
     for policy in policies:
-        gs.init(logging_level="warning")  # type:ignore[unknownMemberType]
+        gs.init(logging_level="warning")  # pyright:ignore[unknownMemberType]
         agent_run(policy, n_episodes)
         gs.destroy()
 

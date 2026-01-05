@@ -1,8 +1,11 @@
 import logging
 import sys
+from typing import cast
 
+# pyright: reportUnknownMemberType=false
 import matplotlib.pyplot as plt
 import torch
+from tensordict import TensorDict  # pyright:ignore[reportUnknownTypeStubs]
 
 from examples.maintenance_scheduling_multidiscrete.agent.deep_rl_rsl import (
     Agent as DeepRlAgentRSL,
@@ -61,7 +64,7 @@ def agent_run(seed: int, policy: str, n_episodes: int) -> list[float]:
     cumulative_risk = 0.0
     i_episode = 0
     while i_episode < n_episodes:
-        action = agent.get_action(obs["policy"])
+        action = agent.get_action(cast(TensorDict, obs["policy"]))
         obs, reward, done, _ = env.step(action)
         cumulative_risk -= float(reward[0].cpu().numpy())
         risk_history.append(cumulative_risk)

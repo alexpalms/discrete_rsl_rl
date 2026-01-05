@@ -9,7 +9,7 @@ class Agent:
         self.env = env
         self.no_actions = torch.zeros(
             self.env.num_envs,
-            self.env.action_space.shape[0],  # type:ignore[reportUnkownMemberType]
+            self.env.action_space.shape[0],  # pyright:ignore[reportUnkownMemberType]
             device=self.env.device,
         )
 

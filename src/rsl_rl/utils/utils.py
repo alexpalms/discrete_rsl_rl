@@ -16,7 +16,7 @@ from typing import Any, cast
 
 import git
 import torch
-from tensordict import TensorDict  # type:ignore[reportMissingTypeStubs]
+from tensordict import TensorDict  # pyright:ignore[reportMissingTypeStubs]
 
 logger = logging.getLogger("containerl.environment_client")
 logging.basicConfig(
@@ -118,21 +118,21 @@ def split_and_pad_trajectories(
         (flat_dones.new_tensor([-1], dtype=torch.int64), flat_dones.nonzero()[:, 0])
     )
     trajectory_lengths = done_indices[1:] - done_indices[:-1]
-    trajectory_lengths_list = cast(list[int], trajectory_lengths.tolist())  # type:ignore[reportUnknownMemberType]
+    trajectory_lengths_list = cast(list[int], trajectory_lengths.tolist())  # pyright:ignore[reportUnknownMemberType]
     # Extract the individual trajectories
     if isinstance(tensor, TensorDict):
         padded_trajectories = {}
-        for k, v in cast(tuple[str, torch.Tensor], tensor.items()):  # type:ignore[reportUnknownMemberType]
+        for k, v in cast(tuple[str, torch.Tensor], tensor.items()):  # pyright:ignore[reportUnknownMemberType]
             # split the tensor into trajectories
             trajectories = torch.split(
-                v.transpose(1, 0).flatten(0, 1),  # type:ignore[reportUnknownMemberType]
+                v.transpose(1, 0).flatten(0, 1),  # pyright:ignore[reportUnknownMemberType]
                 trajectory_lengths_list,
             )
             # add at least one full length trajectory
             trajectories = cast(
                 list[torch.Tensor],
                 trajectories
-                + (torch.zeros(v.shape[0], *v.shape[2:], device=v.device),),  # type:ignore[reportUnknownMemberType]
+                + (torch.zeros(v.shape[0], *v.shape[2:], device=v.device),),  # pyright:ignore[reportUnknownMemberType]
             )
             # pad the trajectories to the length of the longest trajectory
             padded_trajectories[k] = torch.nn.utils.rnn.pad_sequence(trajectories)
@@ -312,7 +312,7 @@ def resolve_obs_groups(
             if group not in obs:
                 raise ValueError(
                     f"Observation '{group}' in observation set '{set_name}' not found in the observations from the"
-                    f" environment. Available observations from the environment: {list(obs.keys())}"  # type:ignore[reportUnknownMemberType]
+                    f" environment. Available observations from the environment: {list(obs.keys())}"  # pyright:ignore[reportUnknownMemberType]
                 )
 
     # fill missing observation sets

@@ -57,7 +57,7 @@ class RolloutStorage:
         self.observations = TensorDict(
             {
                 key: torch.zeros(num_transitions_per_env, *value.shape, device=device)
-                for key, value in cast(Iterator[tuple[str, torch.Tensor]], obs.items())  # type:ignore[reportUnknownMemberType]
+                for key, value in cast(Iterator[tuple[str, torch.Tensor]], obs.items())  # pyright:ignore[reportUnknownMemberType]
             },
             batch_size=[num_transitions_per_env, num_envs],
             device=self.device,
