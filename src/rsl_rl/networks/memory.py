@@ -21,7 +21,9 @@ class Memory(nn.Module):
         super().__init__()
         # RNN
         rnn_cls = nn.GRU if type.lower() == "gru" else nn.LSTM
-        self.rnn = rnn_cls(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers)
+        self.rnn = rnn_cls(
+            input_size=input_size, hidden_size=hidden_size, num_layers=num_layers
+        )
         self.hidden_states = None
 
     def forward(self, input, masks=None, hidden_states=None):
@@ -29,7 +31,9 @@ class Memory(nn.Module):
         if batch_mode:
             # batch mode: needs saved hidden states
             if hidden_states is None:
-                raise ValueError("Hidden states not passed to memory module during policy update")
+                raise ValueError(
+                    "Hidden states not passed to memory module during policy update"
+                )
             out, _ = self.rnn(input, hidden_states)
             out = unpad_trajectories(out, masks)
         else:
@@ -59,12 +63,18 @@ class Memory(nn.Module):
         if self.hidden_states is not None:
             if dones is None:  # detach all hidden states
                 if isinstance(self.hidden_states, tuple):  # tuple in case of LSTM
-                    self.hidden_states = tuple(hidden_state.detach() for hidden_state in self.hidden_states)
+                    self.hidden_states = tuple(
+                        hidden_state.detach() for hidden_state in self.hidden_states
+                    )
                 else:
                     self.hidden_states = self.hidden_states.detach()
             else:  # detach hidden states of done environments
                 if isinstance(self.hidden_states, tuple):  # tuple in case of LSTM
                     for hidden_state in self.hidden_states:
-                        hidden_state[..., dones == 1, :] = hidden_state[..., dones == 1, :].detach()
+                        hidden_state[..., dones == 1, :] = hidden_state[
+                            ..., dones == 1, :
+                        ].detach()
                 else:
-                    self.hidden_states[..., dones == 1, :] = self.hidden_states[..., dones == 1, :].detach()
+                    self.hidden_states[..., dones == 1, :] = self.hidden_states[
+                        ..., dones == 1, :
+                    ].detach()

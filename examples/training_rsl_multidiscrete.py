@@ -6,10 +6,10 @@ import os
 
 import yaml
 
-from discrete_rsl_rl.runners import OnPolicyRunner
 from examples.maintenance_scheduling_multidiscrete.environment.environment import (
     Environment,
 )
+from rsl_rl.runners import OnPolicyRunner
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

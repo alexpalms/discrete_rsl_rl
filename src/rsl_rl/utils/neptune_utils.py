@@ -7,49 +7,64 @@ from __future__ import annotations
 
 import os
 from dataclasses import asdict
+from typing import Any
+
 from torch.utils.tensorboard import SummaryWriter
 
 try:
     import neptune
 except ModuleNotFoundError:
-    raise ModuleNotFoundError("neptune-client is required to log to Neptune.")
+    raise ModuleNotFoundError(
+        "neptune-client is required to log to Neptune."
+    ) from ModuleNotFoundError
 
 
 class NeptuneLogger:
-    def __init__(self, project, token):
+    def __init__(self, project: str, token: str):
         self.run = neptune.init_run(project=project, api_token=token)
 
-    def store_config(self, env_cfg, runner_cfg, alg_cfg, policy_cfg):
+    def store_config(
+        self,
+        env_cfg: dict[str, Any] | object,
+        runner_cfg: dict[str, Any],
+        alg_cfg: dict[str, Any],
+        policy_cfg: dict[str, Any],
+    ):
         self.run["runner_cfg"] = runner_cfg
         self.run["policy_cfg"] = policy_cfg
         self.run["alg_cfg"] = alg_cfg
-        self.run["env_cfg"] = asdict(env_cfg)
+        if type(env_cfg) is dict:
+            self.run["env_cfg"] = env_cfg
+        else:
+            self.run["env_cfg"] = asdict(env_cfg)  # type:ignore[reportArgumentType]
 
 
 class NeptuneSummaryWriter(SummaryWriter):
     """Summary writer for Neptune."""
 
-    def __init__(self, log_dir: str, flush_secs: int, cfg):
-        super().__init__(log_dir, flush_secs)
+    def __init__(self, log_dir: str, flush_secs: int, cfg: dict[str, Any]):
+        super().__init__(log_dir, flush_secs=flush_secs)  # type:ignore[reportUnknownMemberType]
 
         try:
             project = cfg["neptune_project"]
         except KeyError:
-            raise KeyError("Please specify neptune_project in the runner config, e.g. legged_gym.")
+            raise KeyError(
+                "Please specify neptune_project in the runner config, e.g. legged_gym."
+            ) from KeyError
 
         try:
             token = os.environ["NEPTUNE_API_TOKEN"]
         except KeyError:
             raise KeyError(
                 "Neptune api token not found. Please run or add to ~/.bashrc: export NEPTUNE_API_TOKEN=YOUR_API_TOKEN"
-            )
+            ) from KeyError
 
         try:
             entity = os.environ["NEPTUNE_USERNAME"]
         except KeyError:
             raise KeyError(
                 "Neptune username not found. Please run or add to ~/.bashrc: export NEPTUNE_USERNAME=YOUR_USERNAME"
-            )
+            ) from KeyError
 
         neptune_project = entity + "/" + project
 
@@ -62,33 +77,48 @@ class NeptuneSummaryWriter(SummaryWriter):
 
         run_name = os.path.split(log_dir)[-1]
 
-        self.neptune_logger.run["log_dir"].log(run_name)
+        self.neptune_logger.run["log_dir"].log(run_name)  # type:ignore[reportUnknownMemberType]
 
-    def _map_path(self, path):
+    def _map_path(self, path: str) -> str:
         if path in self.name_map:
             return self.name_map[path]
         else:
             return path
 
-    def add_scalar(self, tag, scalar_value, global_step=None, walltime=None, new_style=False):
-        super().add_scalar(
+    def add_scalar(
+        self,
+        tag: Any,
+        scalar_value: Any,
+        global_step: int | None = None,
+        walltime: Any | None = None,
+        new_style: bool = False,
+        double_precision: bool = False,
+    ):
+        super().add_scalar(  # type:ignore[reportUnknownMemberType]
             tag,
             scalar_value,
             global_step=global_step,
             walltime=walltime,
             new_style=new_style,
+            double_precision=double_precision,
         )
-        self.neptune_logger.run[self._map_path(tag)].log(scalar_value, step=global_step)
+        self.neptune_logger.run[self._map_path(tag)].log(scalar_value, step=global_step)  # type:ignore[reportUnknownMemberType]
 
     def stop(self):
         self.neptune_logger.run.stop()
 
-    def log_config(self, env_cfg, runner_cfg, alg_cfg, policy_cfg):
+    def log_config(
+        self,
+        env_cfg: dict[str, Any],
+        runner_cfg: dict[str, Any],
+        alg_cfg: dict[str, Any],
+        policy_cfg: dict[str, Any],
+    ):
         self.neptune_logger.store_config(env_cfg, runner_cfg, alg_cfg, policy_cfg)
 
-    def save_model(self, model_path, iter):
-        self.neptune_logger.run["model/saved_model_" + str(iter)].upload(model_path)
+    def save_model(self, model_path: str, iter: int):
+        self.neptune_logger.run["model/saved_model_" + str(iter)].upload(model_path)  # type:ignore[reportUnknownMemberType]
 
-    def save_file(self, path, iter=None):
+    def save_file(self, path: str, _iter: int | None = None):
         name = path.rsplit("/", 1)[-1].split(".")[0]
-        self.neptune_logger.run["git_diff/" + name].upload(path)
+        self.neptune_logger.run["git_diff/" + name].upload(path)  # type:ignore[reportUnknownMemberType]

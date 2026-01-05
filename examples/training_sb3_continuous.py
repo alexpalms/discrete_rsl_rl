@@ -1,11 +1,13 @@
 """Training script for the continuous PPO agent using Stable Baselines3."""
 
 import argparse
+import logging
 import os
 import re
+import sys
 from copy import deepcopy
 
-import genesis as gs
+import genesis as gs  # type: ignore[reportMissingTypeStubs]
 import yaml
 from sb3.misc import (
     AutoSave,
@@ -15,8 +17,16 @@ from sb3.misc import (
     make_sb3_env,
 )
 from stable_baselines3 import PPO
+from stable_baselines3.common.callbacks import BaseCallback
 
 from examples.legged_locomotion_continuous.environment.environment import Environment
+
+logger = logging.getLogger("containerl.environment_client")
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s: %(message)s",
+)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -27,7 +37,7 @@ if __name__ == "__main__":
         help="Configuration file",
     )
     opt = parser.parse_args()
-    print(opt)
+    logger.info(opt)
 
     with open(opt.config) as file:
         train_config_in = yaml.safe_load(file)
@@ -50,13 +60,13 @@ if __name__ == "__main__":
 
     os.makedirs(model_folder, exist_ok=True)
 
-    gs.init(logging_level="warning")
+    gs.init(logging_level="warning")  # type:ignore[reportUnkownMemberType]
 
     env = make_sb3_env(
         Environment, env_args, seed=train_config["seed"], monitor_folder=monitor_folder
     )
     num_envs = env_args["num_envs"]
-    print(f"Activated {num_envs} environment(s)")
+    logger.info(f"Activated {num_envs} environment(s)")
 
     # Generic algo settings
     gamma = train_config["gamma"]
@@ -73,7 +83,7 @@ if __name__ == "__main__":
     n_steps = train_config["n_steps"]
     batch_size = train_config["batch_size"]
     min_steps = num_envs * n_steps
-    assert training_stop_config["max_time_steps"] > min_steps, (
+    assert training_stop_config["max_time_steps"] > min_steps, (  # noqa: S101
         f"The minimum number of training steps is {min_steps}"
     )
     gae_lambda = train_config["gae_lambda"]
@@ -87,7 +97,7 @@ if __name__ == "__main__":
 
     starting_steps = 0
     reset_num_timesteps = True
-    callbacks = [CustomMetrics()]
+    callbacks: list[BaseCallback] = [CustomMetrics()]
 
     if model_checkpoint_path is None:
         agent = PPO(
@@ -121,7 +131,7 @@ if __name__ == "__main__":
             )
         starting_steps = int(match.group(1))  # Convert the found number to an integer
 
-        agent = PPO.load(
+        agent = PPO.load(  # type:ignore[reportUnkonwMemberType]
             model_checkpoint_path,
             env=env,
             policy_kwargs=policy_kwargs,
@@ -145,8 +155,8 @@ if __name__ == "__main__":
         callbacks.append(StartingSteps(starting_steps=starting_steps))
 
     # Print policy network architecture
-    print("Policy architecture:")
-    print(agent.policy)
+    logger.info("Policy architecture:")
+    logger.info(agent.policy)
 
     # Create the callback: autosave every USER DEF steps
     autosave = model_save_config["autosave"]["active"]
@@ -165,7 +175,7 @@ if __name__ == "__main__":
 
     # Train the agent
     time_steps = training_stop_config["max_time_steps"]
-    agent.learn(
+    agent.learn(  # type:ignore[reportUnkonwMemberType]
         total_timesteps=time_steps,
         reset_num_timesteps=reset_num_timesteps,
         callback=callbacks,
@@ -177,7 +187,7 @@ if __name__ == "__main__":
     agent.save(model_path)
 
     # Free memory
-    assert agent.env is not None
+    assert agent.env is not None  # noqa
     agent.env.close()
     del agent.env
     del agent

@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 import torch
 from tensordict import TensorDict  # type: ignore[reportMissingStubs]
@@ -39,7 +40,7 @@ class VecEnv(ABC):
     device: torch.device
     """Device to use."""
 
-    cfg: dict | object
+    cfg: dict[str, Any] | object
     """Configuration object."""
 
     """
@@ -58,7 +59,7 @@ class VecEnv(ABC):
     @abstractmethod
     def step(
         self, actions: torch.Tensor
-    ) -> tuple[TensorDict, torch.Tensor, torch.Tensor, dict]:
+    ) -> tuple[TensorDict, torch.Tensor, torch.Tensor, dict[str, Any]]:
         """Apply input action to the environment.
 
         Args:

@@ -37,7 +37,7 @@ class CpuVecEnvToSb3VecEnv(VecEnv):
     ) -> None:
         self.logger = logging.getLogger(__name__)
         self.vec_env = vec_env
-        super().__init__(
+        super().__init__(  # type:ignore[reportUnkownMemberType]
             num_envs=self.vec_env.num_envs,
             observation_space=self.vec_env.observation_space,
             action_space=self.vec_env.action_space,

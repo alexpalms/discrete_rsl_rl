@@ -5,8 +5,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from typing import cast
+
 import torch
-from tensordict import TensorDict
+from tensordict import TensorDict  # type: ignore[reportMissingTypeStubs]
 
 from rsl_rl.utils import split_and_pad_trajectories
 
@@ -21,7 +24,9 @@ class RolloutStorage:
             self.dones = None
             self.values = None
             self.actions_log_prob = None
-            self.action_mean = None  # For continuous: mean vector; for discrete: concatenated logits
+            self.action_mean = (
+                None  # For continuous: mean vector; for discrete: concatenated logits
+            )
             self.action_sigma = None
             self.hidden_states = None
 
@@ -30,14 +35,15 @@ class RolloutStorage:
 
     def __init__(
         self,
-        training_type,
-        num_envs,
-        num_transitions_per_env,
-        obs,
-        actions_shape,
-        device="cpu",
-        action_type="continuous",  # "continuous" or "multi_discrete"
-        logits_shape=None,  # Required if action_type == "multi_discrete"
+        training_type: str,
+        num_envs: int,
+        num_transitions_per_env: int,
+        obs: TensorDict,
+        actions_shape: tuple[int, ...],
+        device: str = "cpu",
+        action_type: str = "continuous",  # "continuous" or "multi_discrete"
+        logits_shape: tuple[int, ...]
+        | None = None,  # Required if action_type == "multi_discrete"
     ):
         # store inputs
         self.training_type = training_type
@@ -49,33 +55,72 @@ class RolloutStorage:
 
         # Core
         self.observations = TensorDict(
-            {key: torch.zeros(num_transitions_per_env, *value.shape, device=device) for key, value in obs.items()},
+            {
+                key: torch.zeros(num_transitions_per_env, *value.shape, device=device)
+                for key, value in cast(Iterator[tuple[str, torch.Tensor]], obs.items())  # type:ignore[reportUnknownMemberType]
+            },
             batch_size=[num_transitions_per_env, num_envs],
             device=self.device,
         )
-        self.rewards = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
-        self.actions = torch.zeros(num_transitions_per_env, num_envs, *actions_shape, device=self.device, dtype=torch.long if action_type == "multi_discrete" else torch.float)
+        self.rewards = torch.zeros(
+            num_transitions_per_env, num_envs, 1, device=self.device
+        )
+        self.actions = torch.zeros(
+            num_transitions_per_env,
+            num_envs,
+            *actions_shape,
+            device=self.device,
+            dtype=torch.long if action_type == "multi_discrete" else torch.float,
+        )
 
-        self.dones = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device).byte()
+        self.dones = torch.zeros(
+            num_transitions_per_env, num_envs, 1, device=self.device
+        ).byte()
 
         # for distillation
         if training_type == "distillation":
-            self.privileged_actions = torch.zeros(num_transitions_per_env, num_envs, *actions_shape, device=self.device)
+            self.privileged_actions = torch.zeros(
+                num_transitions_per_env, num_envs, *actions_shape, device=self.device
+            )
 
         # for reinforcement learning
         if training_type == "rl":
-            self.values = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
-            self.actions_log_prob = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
-            self.returns = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
-            self.advantages = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
+            self.values = torch.zeros(
+                num_transitions_per_env, num_envs, 1, device=self.device
+            )
+            self.actions_log_prob = torch.zeros(
+                num_transitions_per_env, num_envs, 1, device=self.device
+            )
+            self.returns = torch.zeros(
+                num_transitions_per_env, num_envs, 1, device=self.device
+            )
+            self.advantages = torch.zeros(
+                num_transitions_per_env, num_envs, 1, device=self.device
+            )
             if action_type == "continuous":
-                self.mu = torch.zeros(num_transitions_per_env, num_envs, *actions_shape, device=self.device)
-                self.sigma = torch.zeros(num_transitions_per_env, num_envs, *actions_shape, device=self.device)
+                self.mu = torch.zeros(
+                    num_transitions_per_env,
+                    num_envs,
+                    *actions_shape,
+                    device=self.device,
+                )
+                self.sigma = torch.zeros(
+                    num_transitions_per_env,
+                    num_envs,
+                    *actions_shape,
+                    device=self.device,
+                )
             elif action_type == "multi_discrete":
                 if logits_shape is None:
-                    raise ValueError("logits_shape must be provided for multi_discrete action_type")
-                self.mu = torch.zeros(num_transitions_per_env, num_envs, *logits_shape, device=self.device)
-                self.sigma = torch.zeros(num_transitions_per_env, num_envs, *logits_shape, device=self.device)  # kept for API compatibility
+                    raise ValueError(
+                        "logits_shape must be provided for multi_discrete action_type"
+                    )
+                self.mu = torch.zeros(
+                    num_transitions_per_env, num_envs, *logits_shape, device=self.device
+                )
+                self.sigma = torch.zeros(
+                    num_transitions_per_env, num_envs, *logits_shape, device=self.device
+                )  # kept for API compatibility
 
         # For RNN networks
         self.saved_hidden_states_a = None
@@ -84,10 +129,12 @@ class RolloutStorage:
         # counter for the number of transitions stored
         self.step = 0
 
-    def add_transitions(self, transition: Transition):
+    def add_transitions(self, transition: Transition) -> None:
         # check if the transition is valid
         if self.step >= self.num_transitions_per_env:
-            raise OverflowError("Rollout buffer overflow! You should call clear() before adding new transitions.")
+            raise OverflowError(
+                "Rollout buffer overflow! You should call clear() before adding new transitions."
+            )
 
         # Core
         self.observations[self.step].copy_(transition.observations)
@@ -102,12 +149,16 @@ class RolloutStorage:
         # for reinforcement learning
         if self.training_type == "rl":
             self.values[self.step].copy_(transition.values)
-            self.actions_log_prob[self.step].copy_(transition.actions_log_prob.view(-1, 1))
+            self.actions_log_prob[self.step].copy_(
+                transition.actions_log_prob.view(-1, 1)
+            )
             if self.action_type == "continuous":
                 self.mu[self.step].copy_(transition.action_mean)
                 self.sigma[self.step].copy_(transition.action_sigma)
             elif self.action_type == "multi_discrete":
-                self.mu[self.step].copy_(transition.action_mean)  # concatenated logits tensor
+                self.mu[self.step].copy_(
+                    transition.action_mean
+                )  # concatenated logits tensor
                 self.sigma[self.step].zero_()  # sigma not used, zeroed
 
         # For RNN networks
@@ -120,25 +171,41 @@ class RolloutStorage:
         if hidden_states is None or hidden_states == (None, None):
             return
         # make a tuple out of GRU hidden state sto match the LSTM format
-        hid_a = hidden_states[0] if isinstance(hidden_states[0], tuple) else (hidden_states[0],)
-        hid_c = hidden_states[1] if isinstance(hidden_states[1], tuple) else (hidden_states[1],)
+        hid_a = (
+            hidden_states[0]
+            if isinstance(hidden_states[0], tuple)
+            else (hidden_states[0],)
+        )
+        hid_c = (
+            hidden_states[1]
+            if isinstance(hidden_states[1], tuple)
+            else (hidden_states[1],)
+        )
         # initialize if needed
         if self.saved_hidden_states_a is None:
             self.saved_hidden_states_a = [
-                torch.zeros(self.observations.shape[0], *hid_a[i].shape, device=self.device) for i in range(len(hid_a))
+                torch.zeros(
+                    self.observations.shape[0], *hid_a[i].shape, device=self.device
+                )
+                for i in range(len(hid_a))
             ]
             self.saved_hidden_states_c = [
-                torch.zeros(self.observations.shape[0], *hid_c[i].shape, device=self.device) for i in range(len(hid_c))
+                torch.zeros(
+                    self.observations.shape[0], *hid_c[i].shape, device=self.device
+                )
+                for i in range(len(hid_c))
             ]
         # copy the states
         for i in range(len(hid_a)):
             self.saved_hidden_states_a[i][self.step].copy_(hid_a[i])
             self.saved_hidden_states_c[i][self.step].copy_(hid_c[i])
 
-    def clear(self):
+    def clear(self) -> None:
         self.step = 0
 
-    def compute_returns(self, last_values, gamma, lam, normalize_advantage: bool = True):
+    def compute_returns(
+        self, last_values, gamma: float, lam: float, normalize_advantage: bool = True
+    ) -> None:
         advantage = 0
         for step in reversed(range(self.num_transitions_per_env)):
             # if we are at the last step, bootstrap the return value
@@ -149,7 +216,11 @@ class RolloutStorage:
             # 1 if we are not in a terminal state, 0 otherwise
             next_is_not_terminal = 1.0 - self.dones[step].float()
             # TD error: r_t + gamma * V(s_{t+1}) - V(s_t)
-            delta = self.rewards[step] + next_is_not_terminal * gamma * next_values - self.values[step]
+            delta = (
+                self.rewards[step]
+                + next_is_not_terminal * gamma * next_values
+                - self.values[step]
+            )
             # Advantage: A(s_t, a_t) = delta_t + gamma * lambda * A(s_{t+1}, a_{t+1})
             advantage = delta + next_is_not_terminal * gamma * lam * advantage
             # Return: R_t = A(s_t, a_t) + V(s_t)
@@ -160,23 +231,36 @@ class RolloutStorage:
         # Normalize the advantages if flag is set
         # This is to prevent double normalization (i.e. if per minibatch normalization is used)
         if normalize_advantage:
-            self.advantages = (self.advantages - self.advantages.mean()) / (self.advantages.std() + 1e-8)
+            self.advantages = (self.advantages - self.advantages.mean()) / (
+                self.advantages.std() + 1e-8
+            )
 
     # for distillation
     def generator(self):
         if self.training_type != "distillation":
-            raise ValueError("This function is only available for distillation training.")
+            raise ValueError(
+                "This function is only available for distillation training."
+            )
 
         for i in range(self.num_transitions_per_env):
-            yield self.observations[i], self.actions[i], self.privileged_actions[i], self.dones[i]
+            yield (
+                self.observations[i],
+                self.actions[i],
+                self.privileged_actions[i],
+                self.dones[i],
+            )
 
     # for reinforcement learning with feedforward networks
     def mini_batch_generator(self, num_mini_batches, num_epochs=8):
         if self.training_type != "rl":
-            raise ValueError("This function is only available for reinforcement learning training.")
+            raise ValueError(
+                "This function is only available for reinforcement learning training."
+            )
         batch_size = self.num_envs * self.num_transitions_per_env
         mini_batch_size = batch_size // num_mini_batches
-        indices = torch.randperm(num_mini_batches * mini_batch_size, requires_grad=False, device=self.device)
+        indices = torch.randperm(
+            num_mini_batches * mini_batch_size, requires_grad=False, device=self.device
+        )
 
         # Core
         observations = self.observations.flatten(0, 1)
@@ -226,8 +310,12 @@ class RolloutStorage:
     # for reinfrocement learning with recurrent networks
     def recurrent_mini_batch_generator(self, num_mini_batches, num_epochs=8):
         if self.training_type != "rl":
-            raise ValueError("This function is only available for reinforcement learning training.")
-        padded_obs_trajectories, trajectory_masks = split_and_pad_trajectories(self.observations, self.dones)
+            raise ValueError(
+                "This function is only available for reinforcement learning training."
+            )
+        padded_obs_trajectories, trajectory_masks = split_and_pad_trajectories(
+            self.observations, self.dones
+        )
 
         mini_batch_size = self.num_envs // num_mini_batches
         for ep in range(num_epochs):
@@ -258,13 +346,17 @@ class RolloutStorage:
                 # take a batch of trajectories and finally reshape back to [num_layers, batch, hidden_dim]
                 last_was_done = last_was_done.permute(1, 0)
                 hid_a_batch = [
-                    saved_hidden_states.permute(2, 0, 1, 3)[last_was_done][first_traj:last_traj]
+                    saved_hidden_states.permute(2, 0, 1, 3)[last_was_done][
+                        first_traj:last_traj
+                    ]
                     .transpose(1, 0)
                     .contiguous()
                     for saved_hidden_states in self.saved_hidden_states_a
                 ]
                 hid_c_batch = [
-                    saved_hidden_states.permute(2, 0, 1, 3)[last_was_done][first_traj:last_traj]
+                    saved_hidden_states.permute(2, 0, 1, 3)[last_was_done][
+                        first_traj:last_traj
+                    ]
                     .transpose(1, 0)
                     .contiguous()
                     for saved_hidden_states in self.saved_hidden_states_c

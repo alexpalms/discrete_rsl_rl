@@ -7,8 +7,9 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
-from rsl_rl.networks import MLP, EmpiricalNormalization
 from torch.distributions import Categorical, Normal
+
+from rsl_rl.networks import MLP, EmpiricalNormalization
 
 
 class ActorCritic(nn.Module):

@@ -7,8 +7,8 @@ import os
 import genesis as gs  # type: ignore
 import yaml
 
-from discrete_rsl_rl.runners import OnPolicyRunner
 from examples.legged_locomotion_continuous.environment.environment import Environment
+from rsl_rl.runners import OnPolicyRunner
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

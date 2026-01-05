@@ -8,7 +8,11 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
-from rsl_rl.networks import MLP, EmpiricalDiscountedVariationNormalization, EmpiricalNormalization
+from rsl_rl.networks import (
+    MLP,
+    EmpiricalDiscountedVariationNormalization,
+    EmpiricalNormalization,
+)
 
 
 class RandomNetworkDistillation(nn.Module):
@@ -85,12 +89,16 @@ class RandomNetworkDistillation(nn.Module):
 
         # Normalization of input gates
         if state_normalization:
-            self.state_normalizer = EmpiricalNormalization(shape=[self.num_states], until=1.0e8).to(self.device)
+            self.state_normalizer = EmpiricalNormalization(
+                shape=[self.num_states], until=1.0e8
+            ).to(self.device)
         else:
             self.state_normalizer = torch.nn.Identity()
         # Normalization of intrinsic reward
         if reward_normalization:
-            self.reward_normalizer = EmpiricalDiscountedVariationNormalization(shape=[], until=1.0e8).to(self.device)
+            self.reward_normalizer = EmpiricalDiscountedVariationNormalization(
+                shape=[], until=1.0e8
+            ).to(self.device)
         else:
             self.reward_normalizer = torch.nn.Identity()
 
@@ -100,12 +108,18 @@ class RandomNetworkDistillation(nn.Module):
         # resolve weight schedule
         if weight_schedule is not None:
             self.weight_scheduler_params = weight_schedule
-            self.weight_scheduler = getattr(self, f"_{weight_schedule['mode']}_weight_schedule")
+            self.weight_scheduler = getattr(
+                self, f"_{weight_schedule['mode']}_weight_schedule"
+            )
         else:
             self.weight_scheduler = None
         # Create network architecture
-        self.predictor = MLP(num_states, num_outputs, predictor_hidden_dims, activation).to(self.device)
-        self.target = MLP(num_states, num_outputs, target_hidden_dims, activation).to(self.device)
+        self.predictor = MLP(
+            num_states, num_outputs, predictor_hidden_dims, activation
+        ).to(self.device)
+        self.target = MLP(num_states, num_outputs, target_hidden_dims, activation).to(
+            self.device
+        )
 
         # make target network not trainable
         self.target.eval()
@@ -120,13 +134,17 @@ class RandomNetworkDistillation(nn.Module):
         target_embedding = self.target(rnd_state).detach()
         predictor_embedding = self.predictor(rnd_state).detach()
         # Compute the intrinsic reward as the distance between the embeddings
-        intrinsic_reward = torch.linalg.norm(target_embedding - predictor_embedding, dim=1)
+        intrinsic_reward = torch.linalg.norm(
+            target_embedding - predictor_embedding, dim=1
+        )
         # Normalize intrinsic reward
         intrinsic_reward = self.reward_normalizer(intrinsic_reward)
 
         # Check the weight schedule
         if self.weight_scheduler is not None:
-            self.weight = self.weight_scheduler(step=self.update_counter, **self.weight_scheduler_params)
+            self.weight = self.weight_scheduler(
+                step=self.update_counter, **self.weight_scheduler_params
+            )
         else:
             self.weight = self.initial_weight
         # Scale intrinsic reward
@@ -135,7 +153,9 @@ class RandomNetworkDistillation(nn.Module):
         return intrinsic_reward
 
     def forward(self, *args, **kwargs):
-        raise RuntimeError("Forward method is not implemented. Use get_intrinsic_reward instead.")
+        raise RuntimeError(
+            "Forward method is not implemented. Use get_intrinsic_reward instead."
+        )
 
     def train(self, mode: bool = True):
         # sets module into training mode
@@ -168,18 +188,27 @@ class RandomNetworkDistillation(nn.Module):
     def _constant_weight_schedule(self, step: int, **kwargs):
         return self.initial_weight
 
-    def _step_weight_schedule(self, step: int, final_step: int, final_value: float, **kwargs):
+    def _step_weight_schedule(
+        self, step: int, final_step: int, final_value: float, **kwargs
+    ):
         return self.initial_weight if step < final_step else final_value
 
-    def _linear_weight_schedule(self, step: int, initial_step: int, final_step: int, final_value: float, **kwargs):
+    def _linear_weight_schedule(
+        self,
+        step: int,
+        initial_step: int,
+        final_step: int,
+        final_value: float,
+        **kwargs,
+    ):
         if step < initial_step:
             return self.initial_weight
         elif step > final_step:
             return final_value
         else:
-            return self.initial_weight + (final_value - self.initial_weight) * (step - initial_step) / (
-                final_step - initial_step
-            )
+            return self.initial_weight + (final_value - self.initial_weight) * (
+                step - initial_step
+            ) / (final_step - initial_step)
 
 
 def resolve_rnd_config(alg_cfg, obs, obs_groups, env):
@@ -199,7 +228,9 @@ def resolve_rnd_config(alg_cfg, obs, obs_groups, env):
         # get dimension of rnd gated state
         num_rnd_state = 0
         for obs_group in obs_groups["rnd_state"]:
-            assert len(obs[obs_group].shape) == 2, "The RND module only supports 1D observations."
+            assert len(obs[obs_group].shape) == 2, (
+                "The RND module only supports 1D observations."
+            )
             num_rnd_state += obs[obs_group].shape[-1]
         # add rnd gated state to config
         alg_cfg["rnd_cfg"]["num_states"] = num_rnd_state

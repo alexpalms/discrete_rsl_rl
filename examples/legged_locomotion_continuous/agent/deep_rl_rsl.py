@@ -5,9 +5,9 @@ from typing import cast
 
 import torch
 import yaml
-from legged_locomotion_continuous.environment.environment import Environment
 from tensordict import TensorDict  # type: ignore
 
+from rsl_rl.env.vec_env import VecEnv
 from rsl_rl.runners import OnPolicyRunner
 
 
@@ -31,7 +31,7 @@ class Agent:
 
     def __init__(
         self,
-        env: Environment,
+        env: VecEnv,
         model_path: str = "./model_rsl.pt",
         config_path: str = "../rsl_config.yaml",
         device: str = "cuda",

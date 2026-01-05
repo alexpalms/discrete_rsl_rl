@@ -6,15 +6,15 @@ from typing import cast
 import numpy as np
 import torch
 from stable_baselines3 import PPO
-from tensordict import TensorDict  # type: ignore[reportMissingStubs]
+from tensordict import TensorDict  # type: ignore[reportMissingTypeStubs]
+
+from rsl_rl.env.vec_env import VecEnv
 
 
 class Agent:
     """Deep RL SB3 Agent."""
 
-    def __init__(
-        self,
-    ) -> None:
+    def __init__(self, env: VecEnv) -> None:
         model_path = os.path.join(os.path.dirname(__file__), "model_sb3.zip")
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model file not found at {model_path}")

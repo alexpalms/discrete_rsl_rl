@@ -5,9 +5,10 @@
 
 from __future__ import annotations
 
+import warnings
+
 import torch
 import torch.nn as nn
-import warnings
 from torch.distributions import Normal
 
 from rsl_rl.networks import MLP, EmpiricalNormalization, Memory
@@ -40,7 +41,9 @@ class StudentTeacherRecurrent(nn.Module):
                 "Please use `rnn_hidden_dim` instead.",
                 DeprecationWarning,
             )
-            if rnn_hidden_dim == 256:  # Only override if the new argument is at its default
+            if (
+                rnn_hidden_dim == 256
+            ):  # Only override if the new argument is at its default
                 rnn_hidden_dim = kwargs.pop("rnn_hidden_size")
         if kwargs:
             print(
@@ -50,21 +53,32 @@ class StudentTeacherRecurrent(nn.Module):
         super().__init__()
 
         self.loaded_teacher = False  # indicates if teacher has been loaded
-        self.teacher_recurrent = teacher_recurrent  # indicates if teacher is recurrent too
+        self.teacher_recurrent = (
+            teacher_recurrent  # indicates if teacher is recurrent too
+        )
 
         # get the observation dimensions
         self.obs_groups = obs_groups
         num_student_obs = 0
         for obs_group in obs_groups["policy"]:
-            assert len(obs[obs_group].shape) == 2, "The StudentTeacher module only supports 1D observations."
+            assert len(obs[obs_group].shape) == 2, (
+                "The StudentTeacher module only supports 1D observations."
+            )
             num_student_obs += obs[obs_group].shape[-1]
         num_teacher_obs = 0
         for obs_group in obs_groups["teacher"]:
-            assert len(obs[obs_group].shape) == 2, "The StudentTeacher module only supports 1D observations."
+            assert len(obs[obs_group].shape) == 2, (
+                "The StudentTeacher module only supports 1D observations."
+            )
             num_teacher_obs += obs[obs_group].shape[-1]
 
         # student
-        self.memory_s = Memory(num_student_obs, type=rnn_type, num_layers=rnn_num_layers, hidden_size=rnn_hidden_dim)
+        self.memory_s = Memory(
+            num_student_obs,
+            type=rnn_type,
+            num_layers=rnn_num_layers,
+            hidden_size=rnn_hidden_dim,
+        )
         self.student = MLP(rnn_hidden_dim, num_actions, student_hidden_dims, activation)
 
         # student observation normalization
@@ -80,10 +94,15 @@ class StudentTeacherRecurrent(nn.Module):
         # teacher
         if self.teacher_recurrent:
             self.memory_t = Memory(
-                num_teacher_obs, type=rnn_type, num_layers=rnn_num_layers, hidden_size=rnn_hidden_dim
+                num_teacher_obs,
+                type=rnn_type,
+                num_layers=rnn_num_layers,
+                hidden_size=rnn_hidden_dim,
             )
             num_teacher_obs = rnn_hidden_dim
-        self.teacher = MLP(num_teacher_obs, num_actions, teacher_hidden_dims, activation)
+        self.teacher = MLP(
+            num_teacher_obs, num_actions, teacher_hidden_dims, activation
+        )
 
         # teacher observation normalization
         self.teacher_obs_normalization = teacher_obs_normalization
@@ -101,9 +120,13 @@ class StudentTeacherRecurrent(nn.Module):
         if self.noise_std_type == "scalar":
             self.std = nn.Parameter(init_noise_std * torch.ones(num_actions))
         elif self.noise_std_type == "log":
-            self.log_std = nn.Parameter(torch.log(init_noise_std * torch.ones(num_actions)))
+            self.log_std = nn.Parameter(
+                torch.log(init_noise_std * torch.ones(num_actions))
+            )
         else:
-            raise ValueError(f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'")
+            raise ValueError(
+                f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'"
+            )
 
         # action distribution (populated in update_distribution)
         self.distribution = None
@@ -141,7 +164,9 @@ class StudentTeacherRecurrent(nn.Module):
         elif self.noise_std_type == "log":
             std = torch.exp(self.log_std).expand_as(mean)
         else:
-            raise ValueError(f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'")
+            raise ValueError(
+                f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'"
+            )
         # create distribution
         self.distribution = Normal(mean, std)
 
@@ -215,7 +240,9 @@ class StudentTeacherRecurrent(nn.Module):
         """
 
         # check if state_dict contains teacher and student or just teacher parameters
-        if any("actor" in key for key in state_dict.keys()):  # loading parameters from rl training
+        if any(
+            "actor" in key for key in state_dict.keys()
+        ):  # loading parameters from rl training
             # rename keys to match teacher and remove critic parameters
             teacher_state_dict = {}
             teacher_obs_normalizer_state_dict = {}
@@ -223,9 +250,13 @@ class StudentTeacherRecurrent(nn.Module):
                 if "actor." in key:
                     teacher_state_dict[key.replace("actor.", "")] = value
                 if "actor_obs_normalizer." in key:
-                    teacher_obs_normalizer_state_dict[key.replace("actor_obs_normalizer.", "")] = value
+                    teacher_obs_normalizer_state_dict[
+                        key.replace("actor_obs_normalizer.", "")
+                    ] = value
             self.teacher.load_state_dict(teacher_state_dict, strict=strict)
-            self.teacher_obs_normalizer.load_state_dict(teacher_obs_normalizer_state_dict, strict=strict)
+            self.teacher_obs_normalizer.load_state_dict(
+                teacher_obs_normalizer_state_dict, strict=strict
+            )
             # also load recurrent memory if teacher is recurrent
             if self.teacher_recurrent:
                 memory_t_state_dict = {}
@@ -238,7 +269,9 @@ class StudentTeacherRecurrent(nn.Module):
             self.teacher.eval()
             self.teacher_obs_normalizer.eval()
             return False  # training does not resume
-        elif any("student" in key for key in state_dict.keys()):  # loading parameters from distillation training
+        elif any(
+            "student" in key for key in state_dict.keys()
+        ):  # loading parameters from distillation training
             super().load_state_dict(state_dict, strict=strict)
             # set flag for successfully loading the parameters
             self.loaded_teacher = True
@@ -246,4 +279,6 @@ class StudentTeacherRecurrent(nn.Module):
             self.teacher_obs_normalizer.eval()
             return True  # training resumes
         else:
-            raise ValueError("state_dict does not contain student or teacher parameters")
+            raise ValueError(
+                "state_dict does not contain student or teacher parameters"
+            )

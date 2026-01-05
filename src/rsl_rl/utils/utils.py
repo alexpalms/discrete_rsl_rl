@@ -5,14 +5,25 @@
 
 from __future__ import annotations
 
-import git
 import importlib
+import logging
 import os
 import pathlib
-import torch
+import sys
 import warnings
-from tensordict import TensorDict
-from typing import Callable
+from collections.abc import Callable
+from typing import Any, cast
+
+import git
+import torch
+from tensordict import TensorDict  # type:ignore[reportMissingTypeStubs]
+
+logger = logging.getLogger("containerl.environment_client")
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s: %(message)s",
+)
 
 
 def resolve_nn_activation(act_name: str) -> torch.nn.Module:
@@ -46,7 +57,9 @@ def resolve_nn_activation(act_name: str) -> torch.nn.Module:
     if act_name in act_dict:
         return act_dict[act_name]
     else:
-        raise ValueError(f"Invalid activation function '{act_name}'. Valid activations are: {list(act_dict.keys())}")
+        raise ValueError(
+            f"Invalid activation function '{act_name}'. Valid activations are: {list(act_dict.keys())}"
+        )
 
 
 def resolve_optimizer(optimizer_name: str) -> torch.optim.Optimizer:
@@ -70,9 +83,11 @@ def resolve_optimizer(optimizer_name: str) -> torch.optim.Optimizer:
 
     optimizer_name = optimizer_name.lower()
     if optimizer_name in optimizer_dict:
-        return optimizer_dict[optimizer_name]
+        return cast(torch.optim.Optimizer, optimizer_dict[optimizer_name])
     else:
-        raise ValueError(f"Invalid optimizer '{optimizer_name}'. Valid optimizers are: {list(optimizer_dict.keys())}")
+        raise ValueError(
+            f"Invalid optimizer '{optimizer_name}'. Valid optimizers are: {list(optimizer_dict.keys())}"
+        )
 
 
 def split_and_pad_trajectories(
@@ -99,39 +114,57 @@ def split_and_pad_trajectories(
     # Permute the buffers to have order (num_envs, num_transitions_per_env, ...), for correct reshaping
     flat_dones = dones.transpose(1, 0).reshape(-1, 1)
     # Get length of trajectory by counting the number of successive not done elements
-    done_indices = torch.cat((flat_dones.new_tensor([-1], dtype=torch.int64), flat_dones.nonzero()[:, 0]))
+    done_indices = torch.cat(
+        (flat_dones.new_tensor([-1], dtype=torch.int64), flat_dones.nonzero()[:, 0])
+    )
     trajectory_lengths = done_indices[1:] - done_indices[:-1]
-    trajectory_lengths_list = trajectory_lengths.tolist()
+    trajectory_lengths_list = cast(list[int], trajectory_lengths.tolist())  # type:ignore[reportUnknownMemberType]
     # Extract the individual trajectories
     if isinstance(tensor, TensorDict):
         padded_trajectories = {}
-        for k, v in tensor.items():
+        for k, v in cast(tuple[str, torch.Tensor], tensor.items()):  # type:ignore[reportUnknownMemberType]
             # split the tensor into trajectories
-            trajectories = torch.split(v.transpose(1, 0).flatten(0, 1), trajectory_lengths_list)
+            trajectories = torch.split(
+                v.transpose(1, 0).flatten(0, 1),  # type:ignore[reportUnknownMemberType]
+                trajectory_lengths_list,
+            )
             # add at least one full length trajectory
-            trajectories = trajectories + (torch.zeros(v.shape[0], *v.shape[2:], device=v.device),)
+            trajectories = cast(
+                list[torch.Tensor],
+                trajectories
+                + (torch.zeros(v.shape[0], *v.shape[2:], device=v.device),),  # type:ignore[reportUnknownMemberType]
+            )
             # pad the trajectories to the length of the longest trajectory
             padded_trajectories[k] = torch.nn.utils.rnn.pad_sequence(trajectories)
             # remove the added tensor
             padded_trajectories[k] = padded_trajectories[k][:, :-1]
         padded_trajectories = TensorDict(
-            padded_trajectories, batch_size=[tensor.batch_size[0], len(trajectory_lengths_list)]
+            padded_trajectories,
+            batch_size=[tensor.batch_size[0], len(trajectory_lengths_list)],
         )
     else:
         # split the tensor into trajectories
-        trajectories = torch.split(tensor.transpose(1, 0).flatten(0, 1), trajectory_lengths_list)
+        trajectories = torch.split(
+            tensor.transpose(1, 0).flatten(0, 1), trajectory_lengths_list
+        )
         # add at least one full length trajectory
-        trajectories = trajectories + (torch.zeros(tensor.shape[0], *tensor.shape[2:], device=tensor.device),)
+        trajectories = cast(
+            list[torch.Tensor],
+            trajectories
+            + (torch.zeros(tensor.shape[0], *tensor.shape[2:], device=tensor.device),),
+        )
         # pad the trajectories to the length of the longest trajectory
         padded_trajectories = torch.nn.utils.rnn.pad_sequence(trajectories)
         # remove the added tensor
         padded_trajectories = padded_trajectories[:, :-1]
     # create masks for the valid parts of the trajectories
-    trajectory_masks = trajectory_lengths > torch.arange(0, tensor.shape[0], device=tensor.device).unsqueeze(1)
+    trajectory_masks = trajectory_lengths > torch.arange(
+        0, tensor.shape[0], device=tensor.device
+    ).unsqueeze(1)
     return padded_trajectories, trajectory_masks
 
 
-def unpad_trajectories(trajectories, masks):
+def unpad_trajectories(trajectories: torch.Tensor, masks: torch.Tensor) -> torch.Tensor:
     """Does the inverse operation of  split_and_pad_trajectories()"""
     # Need to transpose before and after the masking to have proper reshaping
     return (
@@ -141,16 +174,18 @@ def unpad_trajectories(trajectories, masks):
     )
 
 
-def store_code_state(logdir, repositories) -> list:
+def store_code_state(logdir: str, repositories: list[str]) -> list[str]:
     git_log_dir = os.path.join(logdir, "git")
     os.makedirs(git_log_dir, exist_ok=True)
-    file_paths = []
+    file_paths: list[str] = []
     for repository_file_path in repositories:
         try:
             repo = git.Repo(repository_file_path, search_parent_directories=True)
             t = repo.head.commit.tree
         except Exception:
-            print(f"Could not find git repository in {repository_file_path}. Skipping.")
+            logger.info(
+                f"Could not find git repository in {repository_file_path}. Skipping."
+            )
             # skip if not a git repository
             continue
         # get the name of the repository
@@ -160,7 +195,7 @@ def store_code_state(logdir, repositories) -> list:
         if os.path.isfile(diff_file_name):
             continue
         # write the diff file
-        print(f"Storing git diff for '{repo_name}' in: {diff_file_name}")
+        logger.info(f"Storing git diff for '{repo_name}' in: {diff_file_name}")
         with open(diff_file_name, "x", encoding="utf-8") as f:
             content = f"--- git status ---\n{repo.git.status()} \n\n\n--- git diff ---\n{repo.git.diff(t)}"
             f.write(content)
@@ -169,7 +204,14 @@ def store_code_state(logdir, repositories) -> list:
     return file_paths
 
 
-def string_to_callable(name: str) -> Callable:
+def string_to_callable(
+    name: str,
+) -> Callable[
+    [
+        Any,
+    ],
+    Any,
+]:
     """Resolves the module and function names to return the function.
 
     Args:
@@ -196,7 +238,7 @@ def string_to_callable(name: str) -> Callable:
             "We could not interpret the entry as a callable object. The format of input should be"
             f" 'module:attribute_name'\nWhile processing input '{name}', received the error:\n {e}."
         )
-        raise ValueError(msg)
+        raise ValueError(msg) from e
 
 
 def resolve_obs_groups(
@@ -245,7 +287,8 @@ def resolve_obs_groups(
                 "The observation configuration dictionary 'obs_groups' must contain the 'policy' key."
                 " As an observation group with the name 'policy' was found, this is assumed to be the observation set."
                 " Consider adding the 'policy' key to the 'obs_groups' dictionary for clarity."
-                " This behavior will be removed in a future version."
+                " This behavior will be removed in a future version.",
+                stacklevel=2,
             )
         else:
             raise ValueError(
@@ -262,16 +305,14 @@ def resolve_obs_groups(
                 if set_name not in obs:
                     msg += " Consider removing the key to default to the observations used for the 'policy' set."
                 else:
-                    msg += (
-                        f" Consider removing the key to default to the observation '{set_name}' from the environment."
-                    )
+                    msg += f" Consider removing the key to default to the observation '{set_name}' from the environment."
             raise ValueError(msg)
         # check groups exist inside the observations from the environment
         for group in groups:
             if group not in obs:
                 raise ValueError(
                     f"Observation '{group}' in observation set '{set_name}' not found in the observations from the"
-                    f" environment. Available observations from the environment: {list(obs.keys())}"
+                    f" environment. Available observations from the environment: {list(obs.keys())}"  # type:ignore[reportUnknownMemberType]
                 )
 
     # fill missing observation sets
@@ -283,7 +324,8 @@ def resolve_obs_groups(
                     f"The observation configuration dictionary 'obs_groups' must contain the '{default_set_name}' key."
                     f" As an observation group with the name '{default_set_name}' was found, this is assumed to be the"
                     f" observation set. Consider adding the '{default_set_name}' key to the 'obs_groups' dictionary for"
-                    " clarity. This behavior will be removed in a future version."
+                    " clarity. This behavior will be removed in a future version.",
+                    stacklevel=2,
                 )
             else:
                 obs_groups[default_set_name] = obs_groups["policy"].copy()
@@ -291,14 +333,15 @@ def resolve_obs_groups(
                     f"The observation configuration dictionary 'obs_groups' must contain the '{default_set_name}' key."
                     f" As the configuration for '{default_set_name}' is missing, the observations from the 'policy' set"
                     f" are used. Consider adding the '{default_set_name}' key to the 'obs_groups' dictionary for"
-                    " clarity. This behavior will be removed in a future version."
+                    " clarity. This behavior will be removed in a future version.",
+                    stacklevel=2,
                 )
 
     # print the final parsed observation sets
-    print("-" * 80)
-    print("Resolved observation sets: ")
+    logger.info("-" * 80)
+    logger.info("Resolved observation sets: ")
     for set_name, groups in obs_groups.items():
-        print("\t", set_name, ": ", groups)
-    print("-" * 80)
+        logger.info("\t", set_name, ": ", groups)
+    logger.info("-" * 80)
 
     return obs_groups

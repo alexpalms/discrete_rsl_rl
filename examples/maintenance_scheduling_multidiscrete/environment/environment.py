@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 import torch
 from gymnasium import spaces
-from tensordict import TensorDict
+from tensordict import TensorDict  # type: ignore[reportMissingTypeStubs]
 
 from rsl_rl.env.vec_env import VecEnv
 
@@ -106,8 +106,8 @@ class Environment(VecEnv):
             low=0.0, high=1.0, shape=(2 * self.n,), dtype=np.float32
         )
 
-        self.num_actions = [self.n + 1]
-        self.action_space = spaces.MultiDiscrete(self.num_actions)
+        self.num_actions = self.n + 1
+        self.action_space = spaces.MultiDiscrete([self.num_actions])
         self.clock_step = 0
 
     def update_probabilities_to_next_day(self) -> None:

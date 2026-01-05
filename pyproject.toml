@@ -38,6 +38,8 @@ dependencies = [
     #"matplotlib>=3.10.6",
     "pyyaml>=6.0.2",
     "genesis-world>=0.3.3",
+    "wandb>=0.23.1",
+    "neptune>=1.14.0",
 ]
 
 [project.urls]

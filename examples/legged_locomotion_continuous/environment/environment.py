@@ -18,6 +18,8 @@ from genesis.utils.geom import (  # type: ignore
 from gymnasium import spaces
 from tensordict import TensorDict  # type: ignore
 
+from rsl_rl.env.vec_env import VecEnv
+
 
 def gs_rand_float(
     lower: float, upper: float, shape: tuple[int, ...], device: torch.device
@@ -44,7 +46,7 @@ def gs_rand_float(
     return (upper - lower) * torch.rand(size=shape, device=device) + lower
 
 
-class Environment:
+class Environment(VecEnv):
     """
     Legged Locomotion Continuous Environment.
 

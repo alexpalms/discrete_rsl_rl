@@ -5,9 +5,10 @@
 
 from __future__ import annotations
 
+import warnings
+
 import torch
 import torch.nn as nn
-import warnings
 from torch.distributions import Normal
 
 from rsl_rl.networks import MLP, EmpiricalNormalization, Memory
@@ -39,11 +40,14 @@ class ActorCriticRecurrent(nn.Module):
                 "Please use `rnn_hidden_dim` instead.",
                 DeprecationWarning,
             )
-            if rnn_hidden_dim == 256:  # Only override if the new argument is at its default
+            if (
+                rnn_hidden_dim == 256
+            ):  # Only override if the new argument is at its default
                 rnn_hidden_dim = kwargs.pop("rnn_hidden_size")
         if kwargs:
             print(
-                "ActorCriticRecurrent.__init__ got unexpected arguments, which will be ignored: " + str(kwargs.keys()),
+                "ActorCriticRecurrent.__init__ got unexpected arguments, which will be ignored: "
+                + str(kwargs.keys()),
             )
         super().__init__()
 
@@ -51,15 +55,24 @@ class ActorCriticRecurrent(nn.Module):
         self.obs_groups = obs_groups
         num_actor_obs = 0
         for obs_group in obs_groups["policy"]:
-            assert len(obs[obs_group].shape) == 2, "The ActorCriticRecurrent module only supports 1D observations."
+            assert len(obs[obs_group].shape) == 2, (
+                "The ActorCriticRecurrent module only supports 1D observations."
+            )
             num_actor_obs += obs[obs_group].shape[-1]
         num_critic_obs = 0
         for obs_group in obs_groups["critic"]:
-            assert len(obs[obs_group].shape) == 2, "The ActorCriticRecurrent module only supports 1D observations."
+            assert len(obs[obs_group].shape) == 2, (
+                "The ActorCriticRecurrent module only supports 1D observations."
+            )
             num_critic_obs += obs[obs_group].shape[-1]
 
         # actor
-        self.memory_a = Memory(num_actor_obs, type=rnn_type, num_layers=rnn_num_layers, hidden_size=rnn_hidden_dim)
+        self.memory_a = Memory(
+            num_actor_obs,
+            type=rnn_type,
+            num_layers=rnn_num_layers,
+            hidden_size=rnn_hidden_dim,
+        )
         self.actor = MLP(rnn_hidden_dim, num_actions, actor_hidden_dims, activation)
         # actor observation normalization
         self.actor_obs_normalization = actor_obs_normalization
@@ -71,7 +84,12 @@ class ActorCriticRecurrent(nn.Module):
         print(f"Actor MLP: {self.actor}")
 
         # critic
-        self.memory_c = Memory(num_critic_obs, type=rnn_type, num_layers=rnn_num_layers, hidden_size=rnn_hidden_dim)
+        self.memory_c = Memory(
+            num_critic_obs,
+            type=rnn_type,
+            num_layers=rnn_num_layers,
+            hidden_size=rnn_hidden_dim,
+        )
         self.critic = MLP(rnn_hidden_dim, 1, critic_hidden_dims, activation)
         # critic observation normalization
         self.critic_obs_normalization = critic_obs_normalization
@@ -87,9 +105,13 @@ class ActorCriticRecurrent(nn.Module):
         if self.noise_std_type == "scalar":
             self.std = nn.Parameter(init_noise_std * torch.ones(num_actions))
         elif self.noise_std_type == "log":
-            self.log_std = nn.Parameter(torch.log(init_noise_std * torch.ones(num_actions)))
+            self.log_std = nn.Parameter(
+                torch.log(init_noise_std * torch.ones(num_actions))
+            )
         else:
-            raise ValueError(f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'")
+            raise ValueError(
+                f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'"
+            )
 
         # Action distribution (populated in update_distribution)
         self.distribution = None
@@ -124,7 +146,9 @@ class ActorCriticRecurrent(nn.Module):
         elif self.noise_std_type == "log":
             std = torch.exp(self.log_std).expand_as(mean)
         else:
-            raise ValueError(f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'")
+            raise ValueError(
+                f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'"
+            )
         # create distribution
         self.distribution = Normal(mean, std)
 

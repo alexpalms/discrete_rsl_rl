@@ -1,10 +1,17 @@
-import numpy as np
 import torch
+from tensordict import TensorDict  # type: ignore[reportMissingTypeStubs]
+
+from rsl_rl.env.vec_env import VecEnv
+
 
 class Agent:
-    def __init__(self, env):
+    def __init__(self, env: VecEnv):
         self.env = env
-        self.no_actions = torch.zeros(self.env.num_envs, self.env.action_space.shape[0], device=self.env.device)
+        self.no_actions = torch.zeros(
+            self.env.num_envs,
+            self.env.action_space.shape[0],  # type:ignore[reportUnkownMemberType]
+            device=self.env.device,
+        )
 
-    def get_action(self, obs):
+    def get_action(self, obs: TensorDict) -> torch.Tensor:
         return self.no_actions
