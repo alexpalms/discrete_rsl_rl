@@ -9,8 +9,8 @@ from rsl_rl.env.vec_env import VecEnv
 class Agent:
     def __init__(self, env: VecEnv):
         self.env = env
-        self.nnodes: int = self.env.n  # pyright:ignore[reportUnkownMemberType]
-        self.k: int = self.env.action_space.shape[0]  # pyright:ignore[reportUnkownMemberType]
+        self.nnodes: int = self.env.n  # pyright:ignore[reportUnknownMemberType,reportUnknownArgumentType,reportAttributeAccessIssue]
+        self.k: int = self.env.action_space.shape[0]  # pyright:ignore[reportUnknownMemberType,reportUnknownArgumentType,reportAttributeAccessIssue]
 
     def get_action(self, obs: TensorDict) -> torch.Tensor:
         # obs['nodes_infection_probability']: shape (num_sim, n_nodes), torch tensor

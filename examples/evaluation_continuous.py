@@ -48,7 +48,7 @@ if __name__ == "__main__":
     n_episodes = 1
 
     for policy in policies:
-        gs.init(logging_level="warning")  # pyright:ignore[unknownMemberType]
+        gs.init(logging_level="warning")  # pyright:ignore[reportUnknownMemberType]
         agent_run(policy, n_episodes)
         gs.destroy()
 

@@ -5,7 +5,7 @@ from typing import cast
 # pyright: reportUnknownMemberType=false
 import matplotlib.pyplot as plt
 import torch
-from tensordict import TensorDict  # pyright:ignore[reportUnknownTypeStubs]
+from tensordict import TensorDict  # pyright:ignore[reportMissingTypeStubs]
 
 from examples.maintenance_scheduling_multidiscrete.agent.deep_rl_rsl import (
     Agent as DeepRlAgentRSL,

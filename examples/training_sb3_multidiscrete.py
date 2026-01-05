@@ -130,7 +130,7 @@ if __name__ == "__main__":
             )
         starting_steps = int(match.group(1))  # Convert the found number to an integer
 
-        agent = PPO.load(  # pyright:ignore[reportUnkownMemberType]
+        agent = PPO.load(  # pyright:ignore[reportUnknownMemberType]
             model_checkpoint_path,
             env=env,
             policy_kwargs=policy_kwargs,
@@ -174,7 +174,7 @@ if __name__ == "__main__":
 
     # Train the agent
     time_steps = training_stop_config["max_time_steps"]
-    agent.learn(  # pyright:ignore[reportUnkonwMemberType]
+    agent.learn(  # pyright:ignore[reportUnknownMemberType]
         total_timesteps=time_steps,
         reset_num_timesteps=reset_num_timesteps,
         callback=callbacks,
