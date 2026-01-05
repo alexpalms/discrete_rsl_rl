@@ -57,7 +57,7 @@ class Agent:
 
         runner = OnPolicyRunner(env, train_config, "./", device="cuda")
         runner.load(self.model_path)
-        self.policy = runner.get_inference_policy(device=self.device)  # type: ignore
+        self.policy = runner.get_inference_policy(device=self.device)  # pyright:ignore[reportUnknownMemberType]
 
     def get_action(self, obs: TensorDict) -> torch.Tensor:
         """

@@ -1,3 +1,4 @@
+import argparse
 import logging
 import sys
 from typing import cast
@@ -5,34 +6,33 @@ from typing import cast
 # pyright: reportUnknownMemberType=false
 import matplotlib.pyplot as plt
 import torch
-from tensordict import TensorDict  # pyright:ignore[reportMissingTypeStubs]
-
-from examples.maintenance_scheduling_multidiscrete.agent.deep_rl_rsl import (
+from maintenance_scheduling_multidiscrete.agent.deep_rl_rsl import (
     Agent as DeepRlAgentRSL,
 )
-from examples.maintenance_scheduling_multidiscrete.agent.deep_rl_sb3 import (
+from maintenance_scheduling_multidiscrete.agent.deep_rl_sb3 import (
     Agent as DeepRlAgentSB3,
 )
-from examples.maintenance_scheduling_multidiscrete.agent.no_action_agent import (
+from maintenance_scheduling_multidiscrete.agent.no_action_agent import (
     Agent as NoActionAgent,
 )
-from examples.maintenance_scheduling_multidiscrete.agent.random_agent import (
+from maintenance_scheduling_multidiscrete.agent.random_agent import (
     Agent as RandomAgent,
 )
-from examples.maintenance_scheduling_multidiscrete.agent.top_k_failure_probability_heuristic import (
+from maintenance_scheduling_multidiscrete.agent.top_k_failure_probability_heuristic import (
     Agent as TopKFailureProbabilityAgent,
 )
-from examples.maintenance_scheduling_multidiscrete.agent.top_k_risk_heuristic import (
+from maintenance_scheduling_multidiscrete.agent.top_k_risk_heuristic import (
     Agent as TopKRiskAgent,
 )
-from examples.maintenance_scheduling_multidiscrete.agent.top_k_score_heuristic import (
+from maintenance_scheduling_multidiscrete.agent.top_k_score_heuristic import (
     Agent as TopKScoreAgent,
 )
-from examples.maintenance_scheduling_multidiscrete.environment.environment import (
+from maintenance_scheduling_multidiscrete.environment.environment import (
     Environment,
 )
+from tensordict import TensorDict  # pyright:ignore[reportMissingTypeStubs]
 
-logger = logging.getLogger("containerl.environment_client")
+logger = logging.getLogger(__name__)
 logging.basicConfig(
     stream=sys.stdout,
     level=logging.INFO,
@@ -79,7 +79,7 @@ def agent_run(seed: int, policy: str, n_episodes: int) -> list[float]:
     return risk_history
 
 
-def main():
+def main(blocking: bool):
     seed = 42
     policies: list[str] = [
         "no_action",
@@ -128,8 +128,23 @@ def main():
     plt.yticks(fontsize=12)
     plt.legend(loc="lower right", fontsize=13)
     plt.title("Failure Risk Over Time", fontsize=16, pad=20)
-    plt.show(block=True)
+    plt.show(block=blocking)
 
 
 if __name__ == "__main__":
-    main()
+    """Run the evaluation script."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--blocking",
+        type=int,
+        default=1,
+        help="If to use blocking result plotting",
+    )
+    args = parser.parse_args()
+    logger.info(args)
+    try:
+        main(args.blocking == 1)
+        sys.exit(0)
+    except Exception as exc:
+        logger.error(exc)
+        sys.exit(1)

@@ -68,8 +68,13 @@ class ActorCritic(nn.Module):
             else:
                 raise ValueError(f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'")
         else:  # multi_discrete
-            assert isinstance(num_actions, (list, tuple)), "For multi_discrete action_type, num_actions must be list/tuple"
-            self.num_actions_list = list(num_actions)
+            if isinstance(num_actions, int):
+                self.num_actions_list = list([num_actions])
+            elif isinstance(num_actions, tuple):
+                self.num_actions_list = list(num_actions)
+            else:
+                assert isinstance(num_actions, list), "For multi_discrete action_type, num_actions must be int/tuple (automatically converted here in list) or list"
+                self.num_actions_list = num_actions
             self.num_branches = len(self.num_actions_list)
             actor_output_dim = int(sum(self.num_actions_list))  # we will output logits concatenated
             # std/log_std are not used for discrete

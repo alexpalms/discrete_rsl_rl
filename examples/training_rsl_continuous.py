@@ -3,6 +3,7 @@
 import argparse
 import logging
 import os
+import sys
 
 import genesis as gs  # pyright:ignore[reportMissingTypeStubs]
 import yaml
@@ -14,24 +15,13 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def main() -> None:
-    """Run the training script."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config",
-        type=str,
-        default="./examples/legged_locomotion_continuous/rsl_config.yaml",
-        help="Configuration file",
-    )
-    args = parser.parse_args()
-    logger.info(args)
-
+def main(config: str) -> None:
     gs.init(logging_level="warning")  # pyright:ignore[reportUnknownMemberType]
 
-    with open(args.config) as file:
-        config = yaml.safe_load(file)
+    with open(config) as file:
+        config_in = yaml.safe_load(file)
 
-    train_config = config["train_cfg"]
+    train_config = config_in["train_cfg"]
 
     local_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -40,7 +30,7 @@ def main() -> None:
     )
     log_folder = os.path.join(results_folder, "logs/")
 
-    env = Environment(num_envs=config["num_envs"])
+    env = Environment(num_envs=config_in["num_envs"])
 
     runner = OnPolicyRunner(env, train_config, log_folder, device=gs.device)  # pyright:ignore
 
@@ -51,4 +41,19 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    """Run the training script."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="./examples/legged_locomotion_continuous/rsl_config.yaml",
+        help="Configuration file",
+    )
+    args = parser.parse_args()
+    logger.info(args)
+    try:
+        main(args.config)
+        sys.exit(0)
+    except Exception as exc:
+        logger.error(exc)
+        sys.exit(1)

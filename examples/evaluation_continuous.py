@@ -1,17 +1,17 @@
+import argparse
 import logging
 import sys
 
 import genesis as gs  # pyright:ignore[reportMissingTypeStubs]
-
-from examples.legged_locomotion_continuous.agent.deep_rl_rsl import (
+from legged_locomotion_continuous.agent.deep_rl_rsl import (
     Agent as DeepRlAgentRSL,
 )
-from examples.legged_locomotion_continuous.agent.deep_rl_sb3 import (
+from legged_locomotion_continuous.agent.deep_rl_sb3 import (
     Agent as DeepRlAgentSB3,
 )
-from examples.legged_locomotion_continuous.environment.environment import Environment
+from legged_locomotion_continuous.environment.environment import Environment
 
-logger = logging.getLogger("containerl.environment_client")
+logger = logging.getLogger(__name__)
 logging.basicConfig(
     stream=sys.stdout,
     level=logging.INFO,
@@ -19,9 +19,9 @@ logging.basicConfig(
 )
 
 
-def agent_run(policy: str, n_episodes: int):
+def agent_run(policy: str, n_episodes: int, rendering: bool):
     num_envs = 1
-    env = Environment(num_envs, show_viewer=True)
+    env = Environment(num_envs, show_viewer=rendering)
     if policy == "deep_rl_sb3":
         agent = DeepRlAgentSB3(env)
     elif policy == "deep_rl_rsl":
@@ -43,17 +43,32 @@ def agent_run(policy: str, n_episodes: int):
     env.close()
 
 
-def main():
+def main(rendering: bool):
     policies = ["deep_rl_sb3", "deep_rl_rsl"]
     n_episodes = 1
 
     for policy in policies:
         gs.init(logging_level="warning")  # pyright:ignore[reportUnknownMemberType]
-        agent_run(policy, n_episodes)
+        agent_run(policy, n_episodes, rendering)
         gs.destroy()
 
     logger.info("Evaluation complete")
 
 
 if __name__ == "__main__":
-    main()
+    """Run the evaluation script."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--rendering",
+        type=int,
+        default=1,
+        help="If to render environment",
+    )
+    args = parser.parse_args()
+    logger.info(args)
+    try:
+        main(args.rendering == 1)
+        sys.exit(0)
+    except Exception as exc:
+        logger.error(exc)
+        sys.exit(1)

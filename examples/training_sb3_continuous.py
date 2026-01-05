@@ -21,7 +21,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 
 from examples.legged_locomotion_continuous.environment.environment import Environment
 
-logger = logging.getLogger("containerl.environment_client")
+logger = logging.getLogger(__name__)
 logging.basicConfig(
     stream=sys.stdout,
     level=logging.INFO,
@@ -192,4 +192,9 @@ if __name__ == "__main__":
     )
     opt = parser.parse_args()
     logger.info(opt)
-    main(opt.config)
+    try:
+        main(opt.config)
+        sys.exit(0)
+    except Exception as exc:
+        logger.error(exc)
+        sys.exit(1)

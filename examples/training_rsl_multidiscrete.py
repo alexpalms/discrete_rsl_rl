@@ -3,6 +3,7 @@
 import argparse
 import logging
 import os
+import sys
 
 import yaml
 
@@ -15,7 +16,27 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def main() -> None:
+def main(config: str) -> None:
+    local_path = os.path.dirname(os.path.abspath(__file__))
+
+    with open(config) as file:
+        config_in = yaml.safe_load(file)
+
+    train_config = config_in["train_cfg"]
+
+    results_folder = os.path.join(
+        local_path, "runs", train_config["runner"]["experiment_name"]
+    )
+    log_folder = os.path.join(results_folder, "logs/")
+
+    env = Environment(num_envs=config_in["num_envs"])
+
+    runner = OnPolicyRunner(env, train_config, log_folder, device="cuda")
+
+    runner.learn(num_learning_iterations=train_config["runner"]["max_iterations"])
+
+
+if __name__ == "__main__":
     """Run the training script."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -26,25 +47,9 @@ def main() -> None:
     )
     args = parser.parse_args()
     logger.info(args)
-
-    local_path = os.path.dirname(os.path.abspath(__file__))
-
-    with open(args.config) as file:
-        config = yaml.safe_load(file)
-
-    train_config = config["train_cfg"]
-
-    results_folder = os.path.join(
-        local_path, "runs", train_config["runner"]["experiment_name"]
-    )
-    log_folder = os.path.join(results_folder, "logs/")
-
-    env = Environment(num_envs=config["num_envs"])
-
-    runner = OnPolicyRunner(env, train_config, log_folder, device="cuda")
-
-    runner.learn(num_learning_iterations=train_config["runner"]["max_iterations"])
-
-
-if __name__ == "__main__":
-    main()
+    try:
+        main(args.config)
+        sys.exit(0)
+    except Exception as exc:
+        logger.error(exc)
+        sys.exit(1)

@@ -430,7 +430,10 @@ class OnPolicyRunner:
             actions_shape = [self.env.num_actions]
             logits_shape = None
         elif policy_action_type == "multi_discrete":
-            num_actions_list = list(self.env.num_actions)
+            if isinstance(self.env.num_actions, int):
+                num_actions_list = list([self.env.num_actions])
+            else:
+                num_actions_list = list(self.env.num_actions)
             num_branches = len(num_actions_list)
             actions_shape = (num_branches,)
             logits_shape = (int(sum(num_actions_list)),)

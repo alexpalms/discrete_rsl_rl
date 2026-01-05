@@ -22,7 +22,7 @@ from examples.maintenance_scheduling_multidiscrete.environment.environment impor
     Environment,
 )
 
-logger = logging.getLogger("containerl.environment_client")
+logger = logging.getLogger(__name__)
 logging.basicConfig(
     stream=sys.stdout,
     level=logging.INFO,
@@ -191,3 +191,9 @@ if __name__ == "__main__":
     )
     opt = parser.parse_args()
     logger.info(opt)
+    try:
+        main(opt.config)
+        sys.exit(0)
+    except Exception as exc:
+        logger.error(exc)
+        sys.exit(1)
