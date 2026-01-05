@@ -1,0 +1,41 @@
+num_envs: 2
+
+train_cfg:
+  runner_class_name: "OnPolicyRunner"
+  num_steps_per_env: 2048
+  seed: 1
+  obs_groups: {"policy": ["policy"], "critic": ["policy"]}
+  save_interval: 8
+  empirical_normalization: null
+  runner:
+     checkpoint: -1
+     experiment_name: test_multidiscrete_PPO_rsl
+     load_run: -1
+     log_interval: 1
+     max_iterations: 10
+     record_interval: -1
+     resume: False
+     resume_path: null
+     run_name: ""
+  policy:
+     class_name: "ActorCritic"
+     activation: "relu"
+     actor_hidden_dims: [64, 64]
+     critic_hidden_dims: [64, 64]
+     init_noise_std: 1.0
+     action_type: "multi_discrete"
+  algorithm:
+     class_name: "PPO"
+     clip_param: 0.15
+     desired_kl: null
+     entropy_coef: 0.001
+     gamma: 0.95
+     lam: 0.95
+     learning_rate: 0.00025
+     max_grad_norm: 0.5
+     num_learning_epochs: 4
+     num_mini_batches: 128
+     schedule: "adaptive"
+     use_clipped_value_loss: True
+     value_loss_coef: 1.0
+  init_member_classes: {}

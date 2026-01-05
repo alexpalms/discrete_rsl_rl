@@ -1,0 +1,42 @@
+name: test_multidiscrete_PPO_sb3
+
+num_envs: 2
+seed: null
+
+policy_kwargs:
+  net_arch: {"pi": [64, 64], "vf": [64, 64]}
+
+gamma: 0.95
+learning_rate:
+  - 0.00025
+  - 0.0000025
+
+# PPO specific
+clip_range:
+  - 0.15
+  - 0.025
+n_steps: 64
+n_epochs: 4
+batch_size: 256
+
+# Advanced
+gae_lambda: 0.95
+normalize_advantage: True
+ent_coef: 0.0
+vf_coef: 0.5
+max_grad_norm: 0.5
+use_sde: False
+sde_sample_freq: -1
+target_kl: null
+
+model_checkpoint_path: null
+
+# Model save conditions
+model_save:
+  autosave:
+    active: true
+    frequency: 256
+
+# Training stop
+training_stop:
+  max_time_steps: 512
