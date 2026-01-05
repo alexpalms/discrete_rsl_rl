@@ -79,7 +79,7 @@ def agent_run(seed: int, policy: str, n_episodes: int) -> list[float]:
     return risk_history
 
 
-if __name__ == "__main__":
+def main():
     seed = 42
     policies: list[str] = [
         "no_action",
@@ -129,3 +129,7 @@ if __name__ == "__main__":
     plt.legend(loc="lower right", fontsize=13)
     plt.title("Failure Risk Over Time", fontsize=16, pad=20)
     plt.show(block=True)
+
+
+if __name__ == "__main__":
+    main()

@@ -4,11 +4,11 @@ import argparse
 import logging
 import os
 
-import genesis as gs  # type: ignore
+import genesis as gs  # pyright:ignore[reportMissingTypeStubs]
 import yaml
 
 from examples.legged_locomotion_continuous.environment.environment import Environment
-from rsl_rl.runners import OnPolicyRunner
+from rsl_rl.runners import OnPolicyRunner  # pyright:ignore[reportMissingTypeStubs]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -26,7 +26,7 @@ def main() -> None:
     args = parser.parse_args()
     logger.info(args)
 
-    gs.init(logging_level="warning")  # pyright: ignore[reportUnknownMemberType]
+    gs.init(logging_level="warning")  # pyright:ignore[reportUnknownMemberType]
 
     with open(args.config) as file:
         config = yaml.safe_load(file)
@@ -42,7 +42,7 @@ def main() -> None:
 
     env = Environment(num_envs=config["num_envs"])
 
-    runner = OnPolicyRunner(env, train_config, log_folder, device=gs.device)  # pyright: ignore
+    runner = OnPolicyRunner(env, train_config, log_folder, device=gs.device)  # pyright:ignore
 
     runner.learn(
         num_learning_iterations=train_config["runner"]["max_iterations"],

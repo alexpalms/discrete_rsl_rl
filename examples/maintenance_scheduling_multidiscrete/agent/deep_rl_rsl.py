@@ -74,5 +74,5 @@ class Agent:
             The action.
         """
         with torch.no_grad():
-            action = cast(torch.Tensor, self.policy(TensorDict({"policy": obs})))  # pyright: ignore[reportUnknownMemberType]
+            action = cast(torch.Tensor, self.policy(TensorDict({"policy": obs})))  # pyright:ignore[reportUnknownMemberType]
         return action

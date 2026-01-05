@@ -145,7 +145,7 @@ class AutoSave(BaseCallback):
     def _on_step(self) -> bool:
         if self.n_calls % self.check_freq == 0:
             if self.verbose > 0:
-                self.logger.info(f"Saving latest model to {self.save_path_base}")  # pyright: ignore[reportUnknownMemberType]
+                self.logger.info(f"Saving latest model to {self.save_path_base}")  # pyright:ignore[reportUnknownMemberType]
             # Save the agent
             self.model.save(
                 self.save_path_base

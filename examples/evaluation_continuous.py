@@ -43,7 +43,7 @@ def agent_run(policy: str, n_episodes: int):
     env.close()
 
 
-if __name__ == "__main__":
+def main():
     policies = ["deep_rl_sb3", "deep_rl_rsl"]
     n_episodes = 1
 
@@ -53,3 +53,7 @@ if __name__ == "__main__":
         gs.destroy()
 
     logger.info("Evaluation complete")
+
+
+if __name__ == "__main__":
+    main()

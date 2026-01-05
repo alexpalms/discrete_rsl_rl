@@ -19,7 +19,7 @@ class Agent:
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model file not found at {model_path}")
 
-        self.agent = PPO.load(model_path, device="cuda")  # pyright: ignore[reportUnknownMemberType]
+        self.agent = PPO.load(model_path, device="cuda")  # pyright:ignore[reportUnknownMemberType]
 
     def get_action(self, obs: TensorDict) -> torch.Tensor:
         """
@@ -30,7 +30,7 @@ class Agent:
         obs : TensorDict
             The observation.
         """
-        obs_numpy = cast(dict[str, np.ndarray], obs.cpu().numpy())  # pyright: ignore[reportUnknownMemberType]
+        obs_numpy = cast(dict[str, np.ndarray], obs.cpu().numpy())  # pyright:ignore[reportUnknownMemberType]
         prediction, _ = self.agent.predict(obs_numpy["policy"], deterministic=True)
         prediction = torch.tensor(prediction, device="cuda")
         return prediction

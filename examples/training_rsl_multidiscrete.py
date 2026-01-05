@@ -9,7 +9,7 @@ import yaml
 from examples.maintenance_scheduling_multidiscrete.environment.environment import (
     Environment,
 )
-from rsl_rl.runners import OnPolicyRunner
+from rsl_rl.runners import OnPolicyRunner  # pyright:ignore[reportMissingTypeStubs]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

@@ -10,10 +10,10 @@ import numpy as np
 import torch
 import yaml
 from genesis.utils.geom import (  # type: ignore
-    inv_quat,  # pyright: ignore[reportUnknownVariableType]
-    quat_to_xyz,  # pyright: ignore[reportUnknownVariableType]
-    transform_by_quat,  # pyright: ignore[reportUnknownVariableType]
-    transform_quat_by_quat,  # pyright: ignore[reportUnknownVariableType]
+    inv_quat,  # pyright:ignore[reportUnknownVariableType]
+    quat_to_xyz,  # pyright:ignore[reportUnknownVariableType]
+    transform_by_quat,  # pyright:ignore[reportUnknownVariableType]
+    transform_quat_by_quat,  # pyright:ignore[reportUnknownVariableType]
 )
 from gymnasium import spaces
 from tensordict import TensorDict  # type: ignore
@@ -141,19 +141,19 @@ class Environment(VecEnv):
         )
 
         # build
-        self.scene.build(n_envs=num_envs)  # pyright: ignore[reportUnknownMemberType]
+        self.scene.build(n_envs=num_envs)  # pyright:ignore[reportUnknownMemberType]
 
         # names to indices
         self.motors_dof_idx: list[int] = [
-            self.robot.get_joint(name).dof_start  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
+            self.robot.get_joint(name).dof_start  # pyright:ignore[reportAttributeAccessIssue, reportUnknownMemberType]
             for name in self.env_cfg["joint_names"]
         ]
 
         # PD control parameters
-        self.robot.set_dofs_kp(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
+        self.robot.set_dofs_kp(  # pyright:ignore[reportAttributeAccessIssue, reportUnknownMemberType]
             [self.env_cfg["kp"]] * self.num_actions, self.motors_dof_idx
         )
-        self.robot.set_dofs_kv(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
+        self.robot.set_dofs_kv(  # pyright:ignore[reportAttributeAccessIssue, reportUnknownMemberType]
             [self.env_cfg["kd"]] * self.num_actions, self.motors_dof_idx
         )
 
@@ -265,13 +265,13 @@ class Environment(VecEnv):
         target_dof_pos = (
             exec_actions * self.env_cfg["action_scale"] + self.default_dof_pos
         )
-        self.robot.control_dofs_position(target_dof_pos, self.motors_dof_idx)  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
+        self.robot.control_dofs_position(target_dof_pos, self.motors_dof_idx)  # pyright:ignore[reportAttributeAccessIssue, reportUnknownMemberType]
         self.scene.step()
 
         # update buffers
         self.episode_length_buf += 1
-        self.base_pos[:] = cast(torch.Tensor, self.robot.get_pos())  # pyright: ignore
-        self.base_quat[:] = cast(torch.Tensor, self.robot.get_quat())  # pyright: ignore
+        self.base_pos[:] = cast(torch.Tensor, self.robot.get_pos())  # pyright:ignore
+        self.base_quat[:] = cast(torch.Tensor, self.robot.get_quat())  # pyright:ignore
         self.base_euler = cast(
             torch.Tensor,
             quat_to_xyz(
@@ -286,22 +286,22 @@ class Environment(VecEnv):
         inv_base_quat = inv_quat(self.base_quat)
         self.base_lin_vel[:] = cast(
             torch.Tensor,
-            transform_by_quat(self.robot.get_vel(), inv_base_quat),  # pyright: ignore
+            transform_by_quat(self.robot.get_vel(), inv_base_quat),  # pyright:ignore
         )
         self.base_ang_vel[:] = cast(
             torch.Tensor,
-            transform_by_quat(self.robot.get_ang(), inv_base_quat),  # pyright: ignore
+            transform_by_quat(self.robot.get_ang(), inv_base_quat),  # pyright:ignore
         )
         self.projected_gravity = cast(
             torch.Tensor, transform_by_quat(self.global_gravity, inv_base_quat)
         )
         self.dof_pos[:] = cast(
             torch.Tensor,
-            self.robot.get_dofs_position(self.motors_dof_idx),  # pyright: ignore
+            self.robot.get_dofs_position(self.motors_dof_idx),  # pyright:ignore
         )
         self.dof_vel[:] = cast(
             torch.Tensor,
-            self.robot.get_dofs_velocity(self.motors_dof_idx),  # pyright: ignore
+            self.robot.get_dofs_velocity(self.motors_dof_idx),  # pyright:ignore
         )
 
         # resample commands
@@ -412,7 +412,7 @@ class Environment(VecEnv):
         # reset dofs
         self.dof_pos[envs_idx] = self.default_dof_pos
         self.dof_vel[envs_idx] = 0.0
-        self.robot.set_dofs_position(  # pyright: ignore
+        self.robot.set_dofs_position(  # pyright:ignore
             position=self.dof_pos[envs_idx],
             dofs_idx_local=self.motors_dof_idx,
             zero_velocity=True,
@@ -422,17 +422,17 @@ class Environment(VecEnv):
         # reset base
         self.base_pos[envs_idx] = self.base_init_pos
         self.base_quat[envs_idx] = self.base_init_quat.reshape(1, -1)
-        self.robot.set_pos(  # pyright: ignore
+        self.robot.set_pos(  # pyright:ignore
             self.base_pos[envs_idx],
-            zero_velocity=False,  # pyright: ignore
-            envs_idx=envs_idx,  # pyright: ignore
+            zero_velocity=False,  # pyright:ignore
+            envs_idx=envs_idx,  # pyright:ignore
         )
-        self.robot.set_quat(  # pyright: ignore
+        self.robot.set_quat(  # pyright:ignore
             self.base_quat[envs_idx], zero_velocity=False, envs_idx=envs_idx
         )
         self.base_lin_vel[envs_idx] = 0
         self.base_ang_vel[envs_idx] = 0
-        self.robot.zero_all_dofs_velocity(envs_idx)  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
+        self.robot.zero_all_dofs_velocity(envs_idx)  # pyright:ignore[reportAttributeAccessIssue, reportUnknownMemberType]
 
         # reset buffers
         self.last_actions[envs_idx] = 0.0
@@ -470,7 +470,7 @@ class Environment(VecEnv):
         tuple[TensorDict, None]
             The observation and the extras.
         """
-        self.scene.reset()  # pyright: ignore[reportUnknownMemberType]
+        self.scene.reset()  # pyright:ignore[reportUnknownMemberType]
         self.reset_buf[:] = True
         self.reset_idx(torch.arange(self.num_envs, device=self.device))
         return TensorDict({"policy": self.obs_buf}), None

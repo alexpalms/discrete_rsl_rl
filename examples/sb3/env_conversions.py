@@ -75,7 +75,7 @@ class CpuVecEnvToSb3VecEnv(VecEnv):
         self.rewards = np.zeros((self.vec_env.num_envs,), dtype=np.float32)
         self.steps = np.zeros((self.vec_env.num_envs,), dtype=np.int32)
         obs, _ = self.vec_env.reset(seed=seed, options=options)
-        return cast(np.ndarray, obs["policy"].cpu().numpy())  # pyright: ignore[reportUnknownMemberType]
+        return cast(np.ndarray, obs["policy"].cpu().numpy())  # pyright:ignore[reportUnknownMemberType]
 
     def step_async(self, actions: np.ndarray) -> None:
         """
@@ -146,7 +146,7 @@ class CpuVecEnvToSb3VecEnv(VecEnv):
         self.rewards += rew
         self.steps += np.ones((self.vec_env.num_envs,), dtype=np.int32)
 
-        return cast(np.ndarray, obs["policy"].cpu().numpy()), rew, done, info  # pyright: ignore[reportUnknownMemberType]
+        return cast(np.ndarray, obs["policy"].cpu().numpy()), rew, done, info  # pyright:ignore[reportUnknownMemberType]
 
     def render(self, mode: str | None = None) -> np.ndarray | None:
         """

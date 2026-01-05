@@ -7,7 +7,7 @@ import re
 import sys
 from copy import deepcopy
 
-import genesis as gs  # type: ignore[reportMissingTypeStubs]
+import genesis as gs  # pyright:ignore[reportMissingTypeStubs]
 import yaml
 from sb3.misc import (
     AutoSave,
@@ -28,18 +28,9 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s:%(name)s: %(message)s",
 )
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config",
-        type=str,
-        default="./examples/legged_locomotion_continuous/sb3_config.yaml",
-        help="Configuration file",
-    )
-    opt = parser.parse_args()
-    logger.info(opt)
 
-    with open(opt.config) as file:
+def main(config: str):
+    with open(config) as file:
         train_config_in = yaml.safe_load(file)
 
     train_config = deepcopy(train_config_in)
@@ -91,8 +82,6 @@ if __name__ == "__main__":
     ent_coef = train_config["ent_coef"]
     vf_coef = train_config["vf_coef"]
     max_grad_norm = train_config["max_grad_norm"]
-    use_sde = train_config["use_sde"]
-    sde_sample_freq = train_config["sde_sample_freq"]
     target_kl = train_config["target_kl"]
 
     starting_steps = 0
@@ -191,3 +180,16 @@ if __name__ == "__main__":
     agent.env.close()
     del agent.env
     del agent
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="./examples/legged_locomotion_continuous/sb3_config.yaml",
+        help="Configuration file",
+    )
+    opt = parser.parse_args()
+    logger.info(opt)
+    main(opt.config)
