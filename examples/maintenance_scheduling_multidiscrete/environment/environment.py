@@ -1,25 +1,48 @@
-import numpy as np
-from gymnasium import spaces
-import gymnasium as gym
-import torch
-from tensordict import TensorDict
+"""Maintenance Scheduling Multidiscrete Environment."""
+
 import json
 import os
+from typing import Any
 
-class Environment(gym.Env):
-    def __init__(self, num_envs=2048, device="cuda"):
+import numpy as np
+import torch
+from gymnasium import spaces
+from tensordict import TensorDict  # pyright:ignore[reportMissingTypeStubs]
+
+from rsl_rl.env.vec_env import VecEnv  # pyright:ignore[reportMissingTypeStubs]
+
+
+class Environment(VecEnv):
+    """
+    Maintenance Scheduling Multidiscrete Environment.
+
+    Parameters
+    ----------
+    num_envs : int
+        The number of environments to run in parallel.
+    device : str
+        The device to run the environment on.
+    """
+
+    def __init__(self, num_envs: int = 2048, device: str = "cuda") -> None:
         self.device = torch.device(device)
         self.num_envs = num_envs
-        self.simulation_duration = 365 # Days
+        self.simulation_duration = 365  # Days
 
         local_path = os.path.dirname(os.path.abspath(__file__))
 
-        with open(os.path.join(local_path, "component_structure.json"), "r") as f:
+        with open(os.path.join(local_path, "component_structure.json")) as f:
             self.network = json.load(f)
 
         self.n = len(self.network["components_points"])
-        self.connectivity_map = torch.tensor(np.array(self.network["connectivity"]), dtype=torch.float32, device=self.device)
-        self.components_points_values = np.sqrt(np.sum(np.array(self.network["connectivity"]), axis=1))
+        self.connectivity_map = torch.tensor(
+            np.array(self.network["connectivity"]),
+            dtype=torch.float32,
+            device=self.device,
+        )
+        self.components_points_values = np.sqrt(
+            np.sum(np.array(self.network["connectivity"]), axis=1)
+        )
 
         # Intrinsic component failure probability (daily)
         self.mtbf = 150.0
@@ -30,38 +53,65 @@ class Environment(gym.Env):
 
         self.render_mode = None
 
-        self.components_points = torch.tensor(self.components_points_values, dtype=torch.float32, device=self.device)
+        self.components_points = torch.tensor(
+            self.components_points_values, dtype=torch.float32, device=self.device
+        )
         self.components_points = self.components_points.repeat(num_envs, 1)
-        self.components_failure_probability = torch.zeros((num_envs, self.n), dtype=torch.float32, device=self.device)
-        self.delta_probability_prev = torch.zeros((num_envs, self.n), dtype=torch.float32, device=self.device)
-        self.component_age = torch.ones((num_envs, self.n), dtype=torch.float32, device=self.device)
+        self.components_failure_probability = torch.zeros(
+            (num_envs, self.n), dtype=torch.float32, device=self.device
+        )
+        self.delta_probability_prev = torch.zeros(
+            (num_envs, self.n), dtype=torch.float32, device=self.device
+        )
+        self.component_age = torch.ones(
+            (num_envs, self.n), dtype=torch.float32, device=self.device
+        )
 
-        self.components_intrinsic_failure_probability = torch.zeros((num_envs, self.n), dtype=torch.float32, device=self.device)
+        self.components_intrinsic_failure_probability = torch.zeros(
+            (num_envs, self.n), dtype=torch.float32, device=self.device
+        )
         self.components_points /= self.components_points.sum(dim=1, keepdim=True)
 
-        self.c2c_failure_propagation_probability = self.connectivity_map * connected_component_failure_propagation_probability
+        self.c2c_failure_propagation_probability = (
+            self.connectivity_map * connected_component_failure_propagation_probability
+        )
         self.no_cleaning_prob = torch.empty_like(self.components_failure_probability)
-        self.mask = torch.zeros((num_envs, self.n), dtype=torch.bool, device=self.device)
+        self.mask = torch.zeros(
+            (num_envs, self.n), dtype=torch.bool, device=self.device
+        )
         self.one = torch.tensor(1.0, device=self.device)
 
-        self.actions = torch.zeros((self.num_envs,), device=self.device, dtype=torch.int32)
+        self.actions = torch.zeros(
+            (self.num_envs,), device=self.device, dtype=torch.int32
+        )
 
-        self.obs_buf = torch.zeros((self.num_envs, 2 * self.n), device=self.device, dtype=torch.float32)
-        self.rew_buf = torch.zeros((self.num_envs,), device=self.device, dtype=torch.float32)
-        self.cumulative_rew_buf = torch.zeros((self.num_envs,), device=self.device, dtype=torch.float32)
-        self.done_buf = torch.zeros((self.num_envs,), device=self.device, dtype=torch.bool)
+        self.obs_buf = torch.zeros(
+            (self.num_envs, 2 * self.n), device=self.device, dtype=torch.float32
+        )
+        self.rew_buf = torch.zeros(
+            (self.num_envs,), device=self.device, dtype=torch.float32
+        )
+        self.cumulative_rew_buf = torch.zeros(
+            (self.num_envs,), device=self.device, dtype=torch.float32
+        )
+        self.done_buf = torch.zeros(
+            (self.num_envs,), device=self.device, dtype=torch.bool
+        )
 
-        self.extras = dict()
+        self.extras: dict[str, dict[str, torch.Tensor]] = {}
 
         # Observations are dictionaries
         # Concatenate the points (The worth of each component) and the failure probability
-        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(2*self.n, ), dtype=np.float32)
+        self.observation_space = spaces.Box(
+            low=0.0, high=1.0, shape=(2 * self.n,), dtype=np.float32
+        )
 
-        self.num_actions = [self.n + 1]
-        self.action_space = spaces.MultiDiscrete(self.num_actions)
+        self.num_actions = self.n + 1
+        self.action_space = spaces.MultiDiscrete([self.num_actions])
         self.clock_step = 0
 
-    def update_probabilities_to_next_day(self):
+    def update_probabilities_to_next_day(self) -> None:
+        """Update the failure probabilities to the next day."""
         # Update failure probabilities
         no_failures = self.one - self.components_failure_probability
 
@@ -72,26 +122,45 @@ class Environment(gym.Env):
 
         # Probability of NOT failing because of a neighbor failure
         # (1 - i_t[a] * T[a,b]) for each a,b
-        no_failure_from_neighbor = self.one - (self.delta_probability_prev.unsqueeze(1) * self.c2c_failure_propagation_probability[None, :, :])
+        no_failure_from_neighbor = self.one - (
+            self.delta_probability_prev.unsqueeze(1)
+            * self.c2c_failure_propagation_probability[None, :, :]
+        )
 
-        neighbor_delta = no_failures * (self.one - torch.exp(torch.sum(torch.log(no_failure_from_neighbor), dim=1)))
+        neighbor_delta = no_failures * (
+            self.one - torch.exp(torch.sum(torch.log(no_failure_from_neighbor), dim=1))
+        )
 
         # Product over all sources for each target
         self.delta_probability_prev = -self.components_failure_probability
-        self.components_failure_probability = self.one - no_failures * (self.one - intrinsic_delta) * (self.one - neighbor_delta)
+        self.components_failure_probability = self.one - no_failures * (
+            self.one - intrinsic_delta
+        ) * (self.one - neighbor_delta)
         self.delta_probability_prev += self.components_failure_probability
 
         self.component_age += self.one
 
-    def maintenance(self, actions):
+    def maintenance(self, actions: torch.Tensor) -> None:
+        """
+        Perform maintenance on the components.
+
+        Parameters
+        ----------
+        actions : torch.Tensor
+            The actions to perform maintenance on.
+        """
         actions_shifted = actions - self.one
         valid_mask = actions_shifted >= 0
 
         # Make invalid actions a safe index
-        safe_actions = torch.where(valid_mask, actions_shifted, torch.zeros_like(actions_shifted)).to(torch.int)
+        safe_actions = torch.where(
+            valid_mask, actions_shifted, torch.zeros_like(actions_shifted)
+        ).to(torch.int)
 
         # Create index grid for batch dimension
-        env_ids = torch.arange(self.num_envs, device=self.device)[:, None].expand_as(safe_actions)
+        env_ids = torch.arange(self.num_envs, device=self.device)[:, None].expand_as(
+            safe_actions
+        )
 
         # Scatter all at once
         self.mask.fill_(False)
@@ -102,8 +171,24 @@ class Environment(gym.Env):
         self.component_age[self.mask] *= 0.0
         self.delta_probability_prev[self.mask] = 0.0
 
-    def reset(self, seed: int | None = None, options: dict | None = None):
-        super(type(self), self).reset(seed=seed)
+    def reset(
+        self, seed: int | None = None, options: dict[str, Any] | None = None
+    ) -> tuple[TensorDict, None]:
+        """
+        Reset the environment.
+
+        Parameters
+        ----------
+        seed : int | None
+            The seed to reset the environment with.
+        options : dict[str, Any] | None
+            The options to reset the environment with.
+
+        Returns
+        -------
+        tuple[TensorDict, None]
+            The observation and the extras.
+        """
         self.clock_step = 0
         self.components_failure_probability.zero_()
         self.delta_probability_prev.zero_()
@@ -111,12 +196,31 @@ class Environment(gym.Env):
         self.update_probabilities_to_next_day()
         self._compute_observation()
         self.done_buf.fill_(False)
-        self.extras["log"] = {"average_cumulative_reward": -torch.mean(self.cumulative_rew_buf)}
+        self.extras["log"] = {
+            "average_cumulative_reward": -torch.mean(self.cumulative_rew_buf)
+        }
         self.cumulative_rew_buf.zero_()
 
         return TensorDict({"policy": self.obs_buf}), None
 
-    def step(self, actions):
+    def step(
+        self, actions: torch.Tensor
+    ) -> tuple[
+        TensorDict, torch.Tensor, torch.Tensor, dict[str, dict[str, torch.Tensor]]
+    ]:
+        """
+        Step the environment.
+
+        Parameters
+        ----------
+        actions : torch.Tensor
+            The actions to step the environment with.
+
+        Returns
+        -------
+        tuple[TensorDict, torch.Tensor, torch.Tensor, dict[str, dict[str, torch.Tensor]]]
+            The observation, reward, done, and extras.
+        """
         self.clock_step += 1
 
         self.maintenance(actions)
@@ -132,18 +236,41 @@ class Environment(gym.Env):
 
         # Reward
         self.rew_buf = self.cumulative_rew_buf
-        self.cumulative_rew_buf = torch.matmul(self.components_failure_probability, self.components_points[0, :])
+        self.cumulative_rew_buf = torch.matmul(
+            self.components_failure_probability, self.components_points[0, :]
+        )
         self.rew_buf -= self.cumulative_rew_buf
 
         # Observations
         self._compute_observation()
 
-        return TensorDict({"policy": self.obs_buf}), self.rew_buf, self.done_buf, self.extras
+        return (
+            TensorDict({"policy": self.obs_buf}),
+            self.rew_buf,
+            self.done_buf,
+            self.extras,
+        )
 
-    def get_observations(self):
+    def get_observations(self) -> TensorDict:
+        """
+        Get the observations.
+
+        Returns
+        -------
+        TensorDict
+            The observations.
+        """
         return TensorDict({"policy": self.obs_buf})
 
-    def _compute_observation(self):
+    def _compute_observation(self) -> torch.Tensor:
+        """
+        Compute the observation.
+
+        Returns
+        -------
+        torch.Tensor
+            The observation.
+        """
         self.obs_buf = torch.cat(
             [
                 self.components_points,
@@ -153,10 +280,10 @@ class Environment(gym.Env):
         )
         return self.obs_buf
 
-    def render(self):
-        if self.render_mode == "rgb_array":
-            raise NotImplementedError()
+    def render(self) -> None:
+        """Render the environment."""
         return None
 
-    def close(self):
+    def close(self) -> None:
+        """Close the environment."""
         pass

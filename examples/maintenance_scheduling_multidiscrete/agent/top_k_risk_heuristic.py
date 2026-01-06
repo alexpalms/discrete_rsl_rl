@@ -1,20 +1,32 @@
+from typing import cast
+
 import torch
+from tensordict import TensorDict  # pyright:ignore[reportMissingTypeStubs]
+
+from rsl_rl.env.vec_env import VecEnv  # pyright:ignore[reportMissingTypeStubs]
+
 
 class Agent:
-    def __init__(self, env):
+    def __init__(self, env: VecEnv):
         self.env = env
-        self.k = self.env.action_space.shape[0]
+        self.nnodes: int = self.env.n  # pyright:ignore[reportUnknownMemberType,reportUnknownArgumentType,reportAttributeAccessIssue]
+        self.k: int = self.env.action_space.shape[0]  # pyright:ignore[reportUnknownMemberType,reportUnknownArgumentType,reportAttributeAccessIssue]
 
-    def get_action(self, obs):
+    def get_action(self, obs: TensorDict) -> torch.Tensor:
         # obs['nodes_infection_probability']: shape (num_sim, n_nodes), torch tensor
 
-        infection_probs = obs[:, -self.env.n:]  # (num_sim, n_nodes)
-        score = obs[:, :self.env.n]  # (num_sim, n_nodes)
+        infection_probs = cast(
+            torch.Tensor, obs[:, -self.nnodes :]
+        )  # (num_sim, n_nodes)
+        score: torch.Tensor = cast(
+            torch.Tensor,
+            obs[:, : self.nnodes],  # (num_sim, n_nodes)
+        )
         risk = infection_probs * score
 
         # Step 1 & 2 combined: top-k values and their indices, sorted in descending order
         # torch.topk already returns sorted results
-        top_k_values, top_k_indices = torch.topk(risk, self.k, dim=1)
+        _, top_k_indices = torch.topk(risk, self.k, dim=1)
 
         # Step 3: Convert zero-based indices to one-based indexing
         top_k_indices_one_based = top_k_indices + 1

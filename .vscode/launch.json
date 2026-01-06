@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Training",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/${input:training_script}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Run Evaluation",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/${input:evaluation_script}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ],
+    "inputs": [
+        {
+            "id": "training_script",
+            "type": "pickString",
+            "description": "Select the training example",
+            "options": ["training_sb3_continuous.py", "training_sb3_multidiscrete.py", "training_rsl_continuous.py", "training_rsl_multidiscrete.py"],
+        },
+        {
+            "id": "evaluation_script",
+            "type": "pickString",
+            "description": "Select the training example",
+            "options": ["evaluation_continuous.py", "evaluation_multidiscrete.py"],
+        },
+    ]
+}

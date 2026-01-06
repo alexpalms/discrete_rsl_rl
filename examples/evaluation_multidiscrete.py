@@ -1,0 +1,150 @@
+import argparse
+import logging
+import sys
+from typing import cast
+
+# pyright: reportUnknownMemberType=false
+import matplotlib.pyplot as plt
+import torch
+from maintenance_scheduling_multidiscrete.agent.deep_rl_rsl import (
+    Agent as DeepRlAgentRSL,
+)
+from maintenance_scheduling_multidiscrete.agent.deep_rl_sb3 import (
+    Agent as DeepRlAgentSB3,
+)
+from maintenance_scheduling_multidiscrete.agent.no_action_agent import (
+    Agent as NoActionAgent,
+)
+from maintenance_scheduling_multidiscrete.agent.random_agent import (
+    Agent as RandomAgent,
+)
+from maintenance_scheduling_multidiscrete.agent.top_k_failure_probability_heuristic import (
+    Agent as TopKFailureProbabilityAgent,
+)
+from maintenance_scheduling_multidiscrete.agent.top_k_risk_heuristic import (
+    Agent as TopKRiskAgent,
+)
+from maintenance_scheduling_multidiscrete.agent.top_k_score_heuristic import (
+    Agent as TopKScoreAgent,
+)
+from maintenance_scheduling_multidiscrete.environment.environment import (
+    Environment,
+)
+from tensordict import TensorDict  # pyright:ignore[reportMissingTypeStubs]
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s: %(message)s",
+)
+
+
+def agent_run(seed: int, policy: str, n_episodes: int) -> list[float]:
+    num_envs = 1
+    env = Environment(num_envs)
+    if policy == "random":
+        agent = RandomAgent(env)
+    elif policy == "no_action":
+        agent = NoActionAgent(env)
+    elif policy == "top_k_failure_probability":
+        agent = TopKFailureProbabilityAgent(env)
+    elif policy == "top_k_score":
+        agent = TopKScoreAgent(env)
+    elif policy == "top_k_risk":
+        agent = TopKRiskAgent(env)
+    elif policy == "deep_rl_sb3":
+        agent = DeepRlAgentSB3(env)
+    elif policy == "deep_rl_rsl":
+        agent = DeepRlAgentRSL(env)
+    else:
+        raise NotImplementedError("Policy not implemented")
+    obs, _ = env.reset(seed=seed)
+    risk_history: list[float] = []
+    cumulative_risk = 0.0
+    i_episode = 0
+    while i_episode < n_episodes:
+        action = agent.get_action(cast(TensorDict, obs["policy"]))
+        obs, reward, done, _ = env.step(action)
+        cumulative_risk -= float(reward[0].cpu().numpy())
+        risk_history.append(cumulative_risk)
+        if torch.any(done):
+            logger.info("==========================")
+            logger.info(f'Final Risk for policy "{policy}": {cumulative_risk}')
+            obs, _ = env.reset()
+            i_episode += 1
+            cumulative_risk = 0.0
+
+    env.close()
+    return risk_history
+
+
+def main(blocking: bool):
+    seed = 42
+    policies: list[str] = [
+        "no_action",
+        "random",
+        "top_k_failure_probability",
+        "top_k_score",
+        "top_k_risk",
+        "deep_rl_sb3",
+        "deep_rl_rsl",
+    ]
+    n_episodes = 1
+
+    risk_chart: dict[str, list[float]] = {}
+
+    for policy in policies:
+        risk_chart[policy] = agent_run(seed, policy, n_episodes)
+
+    plt.figure(figsize=(10, 6))
+    font = {"size": 14}
+    plt.rc("font", **font)
+    plt.plot(risk_chart["no_action"], label="No Maintenance")
+    plt.plot(risk_chart["random"], label="Random Maintenance", linestyle="--")
+    plt.plot(
+        risk_chart["top_k_failure_probability"],
+        label="Top K Failure Probability Maintenance (K=10)",
+        color="green",
+        marker="o",
+    )
+    plt.plot(
+        risk_chart["top_k_score"],
+        label="Top K Score Maintenance (K=10)",
+        color="red",
+        marker="*",
+    )
+    plt.plot(
+        risk_chart["top_k_risk"],
+        label="Top K Risk Maintenance (K=10)",
+        color="blue",
+        marker="*",
+    )
+    plt.plot(risk_chart["deep_rl_sb3"], label="Deep RL SB3", color="orange", marker="+")
+    plt.plot(risk_chart["deep_rl_rsl"], label="Deep RL RSL", color="purple", marker="x")
+    plt.xlabel("Time [days]", fontsize=14, labelpad=10)
+    plt.ylabel("Failure Risk Probability []", fontsize=14, labelpad=10)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.legend(loc="lower right", fontsize=13)
+    plt.title("Failure Risk Over Time", fontsize=16, pad=20)
+    plt.show(block=blocking)
+
+
+if __name__ == "__main__":
+    """Run the evaluation script."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--blocking",
+        type=int,
+        default=1,
+        help="If to use blocking result plotting",
+    )
+    args = parser.parse_args()
+    logger.info(args)
+    try:
+        main(args.blocking == 1)
+        sys.exit(0)
+    except Exception as exc:
+        logger.error(exc)
+        sys.exit(1)

@@ -1,16 +1,16 @@
 # Read csv files and plot the results
 
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 
 # Continuous PPO
 # Read csv files
 df = pd.read_csv("runs/continuous_PPO.csv")
 
 # Plot the results
-plt.figure(figsize=(10,6))
-font = {'size': 14}
-plt.rc('font', **font)
+plt.figure(figsize=(10, 6))
+font = {"size": 14}
+plt.rc("font", **font)
 # Add horizonal line at 10
 plt.axhline(y=10, color="black", linestyle="--", label="Target Reward")
 plt.plot(df["Relative RSL"], df["Value RSL"], label="RSL")
@@ -28,9 +28,9 @@ plt.show()
 df = pd.read_csv("runs/multidiscrete_PPO.csv")
 
 # Plot the results
-plt.figure(figsize=(10,6))
-font = {'size': 14}
-plt.rc('font', **font)
+plt.figure(figsize=(10, 6))
+font = {"size": 14}
+plt.rc("font", **font)
 # Add horizonal line at 0.5
 plt.axhline(y=0.5, color="black", linestyle="--", label="Target Failure Risk")
 plt.plot(df["Relative RSL"], -df["Value RSL"], label="RSL")
