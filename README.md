@@ -75,14 +75,14 @@ We validate the multi-discrete and continuous implementations through training a
 Train agents:
 
 ```bash
-uv run python training_rsl_multidiscrete.py # RSL Training
-uv run python training_sb3_multidiscrete.py # Stable Baselines 3 Training
+uv run python examples/training_rsl_multidiscrete.py # RSL Training
+uv run python examples/training_sb3_multidiscrete.py # Stable Baselines 3 Training
 ```
 
 After training, evaluate the trained models:
 
 ```bash
-uv run python evaluate_multidiscrete.py
+uv run python examples/evaluate_multidiscrete.py
 ```
 
 Results are visualized below. On the left, you can see the training curves comparing RSL and SB3, while on the right is the evaluation of both trained model on the scheduling task.
@@ -108,14 +108,14 @@ Results are visualized below. On the left, you can see the training curves compa
 Traing agents:
 
 ```bash
-uv run python training_rsl_continuous.py # RSL Training
-uv run python training_sb3_continuous.py # Stable Baselines 3 Training
+uv run python examples/training_rsl_continuous.py # RSL Training
+uv run python examples/training_sb3_continuous.py # Stable Baselines 3 Training
 ```
 
 Evaluate the trained models:
 
 ```bash
-uv run python evaluate_continuous.py
+uv run python examples/evaluate_continuous.py
 ```
 
 The table below shows the learning curves (left) and evaluation of the Unitree Go2 locomotion task for both RSL and SB3 (center and right). RSL-RL maintains performance parity while running fully on GPU.
