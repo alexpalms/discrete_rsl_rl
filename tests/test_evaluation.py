@@ -21,7 +21,7 @@ def test_evaluate(script: str):
     command = ["uv", "run", "python"]
     for item in script.split(" "):
         command.append(item)
-    result = subprocess.run(
+    result = subprocess.run(  # noqa:S603
         command,
         capture_output=True,
         text=True,
