@@ -21,11 +21,8 @@ jobs:
         with:
           version: "latest"
 
-      - name: Create venv
-        run: uv venv
-
       - name: Install package
-        run: uv pip install -e . --group dev
+        run: uv sync
 
       - name: Run pytest
         run: uv run pytest
