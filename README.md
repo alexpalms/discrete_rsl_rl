@@ -9,6 +9,17 @@
 <a href="https://alexpalms.github.io/projects/03-discrete_rsl_rl/"><img src="https://img.shields.io/badge/Blog-Read%20Post-blue" alt="Blog Post"/></a>
 </p>
 
+<p align="center">
+<a href="https://github.com/alexpalms/discrete_rsl_rl/actions/workflows/code-checks.yaml"><img src="https://img.shields.io/github/actions/workflow/status/alexpalms/discrete_rsl_rl/code-checks.yaml?label=code%20checks%20(ruff%20%26%20pyright)&logo=github" alt="Code Checks"/></a>
+<a href="https://github.com/alexpalms/discrete_rsl_rl/actions/workflows/pytest.yaml"><img src="https://img.shields.io/github/actions/workflow/status/alexpalms/discrete_rsl_rl/pytest.yaml?label=tests%20(pytest)&logo=github" alt="Pytest"/></a>
+</p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/supported%20os-linux-blue" alt="Supported OS"/>
+<img src="https://img.shields.io/badge/python-%3E%3D3.12-blue" alt="Python Version"/>
+<img src="https://img.shields.io/github/last-commit/alexpalms/discrete_rsl_rl/main?label=repo%20latest%20update&logo=readthedocs" alt="Latest Repo Update"/>
+</p>
+
 # Discrete RSL RL
 
 Customized version of the original [RSL RL project](https://github.com/leggedrobotics/rsl_rl) that additionally supports multi discrete action spaces, providing a fast and simple implementation of PPO algorithm, designed to run fully on GPU.
